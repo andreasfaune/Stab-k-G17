@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Stabæk G17 – Spillerutvikling</title>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Georgia,'Times New Roman',serif;background:#F2F4F8;min-height:100vh}
+input,select,textarea{font-family:Georgia,'Times New Roman',serif}
+button{font-family:Georgia,'Times New Roman',serif}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:#F2F4F8}
+::-webkit-scrollbar-thumb{background:#C8D0DC;border-radius:3px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const{useState,useEffect,useRef}=React;
+
+// ── Farger ────────────────────────────────────────────────────────────────────
+const C={navy:"#0B2265",blue:"#1A4B8C",gold:"#C9A84C",goldLight:"#E8C96A",
+  white:"#FFFFFF",cream:"#F8F5EE",offWhite:"#F2F4F8",grey:"#7A8FA8",
+  greyLight:"#C8D0DC",text:"#0B1F3A"};
+
+// ── Konstanter ────────────────────────────────────────────────────────────────
+const GRUPPER=[
+  {label:"Angrep",  ikon:"⚡",posisjoner:["Spiss","Høyreving","Venstre ving","Offensiv MF"],farge:"#e74c3c"},
+  {label:"Midtbane",ikon:"⚙️",posisjoner:["Sentral MF","Defensiv MF"],                     farge:C.gold},
+  {label:"Forsvar", ikon:"🛡️",posisjoner:["Høyreback","Midtstopper","Venstreback"],          farge:C.blue},
+  {label:"Keeper",  ikon:"🧤",posisjoner:["Keeper"],                                         farge:"#8e44ad"},
+];
+const KATEGORIER=[
+  {id:"fotball",   label:"Fotball",   ikon:"⚽",farge:C.blue},
+  {id:"kultur",    label:"Kultur",    ikon:"🤝",farge:"#27ae60"},
+  {id:"mentalitet",label:"Mentalitet",ikon:"🧠",farge:"#8e44ad"},
+  {id:"fysisk",    label:"Fysisk",    ikon:"💪",farge:"#e74c3c"},
+];
+const SAMTALE_TYPER=[
+  {id:"Spillersamtale", ikon:"💬",farge:C.blue},
+  {id:"Videosamtale",   ikon:"🎬",farge:"#8e44ad"},
+  {id:"Kampgjennomgang",ikon:"⚽",farge:"#e74c3c"},
+  {id:"Treningssamtale",ikon:"🏃",farge:"#27ae60"},
+];
+const SPILLFASER_LISTE=[
+  {gruppe:"Angrepsspill",  faser:["Byggefase","Kontrollfasen","Skape og Scorefasen"]},
+  {gruppe:"Forsvarsspill", faser:["Gjenvinne","Pressefase","Forsvare boks"]},
+  {gruppe:"Overgangsspill",faser:["Overgang til angrep","Overgang til forsvar"]},
+];
+const POSISJONER=["Keeper","Høyreback","Midtstopper","Venstreback","Defensiv MF","Sentral MF","Offensiv MF","Høyreving","Venstre ving","Spiss"];
+
+const SYSTEM_PROMPT=`Du er en transkriberingsassistent for Stabæk Fotball G17. Din eneste oppgave er å hente ut det som faktisk ble sagt i samtalen.
+
+ABSOLUTT REGEL: Du skal ALDRI skrive noe som ikke ble eksplisitt sagt av trener eller spiller. Ikke generaliser. Ikke fyll ut. Ble noe ikke nevnt → la feltet stå tomt. Et korrekt kort med 1 mål er alltid bedre enn 3 oppfunnede mål.
+
+SPILLFASER (velg ÉN per mål): Byggefase | Kontrollfasen | Skape og Scorefasen | Gjenvinne | Pressefase | Forsvare boks | Overgang til angrep | Overgang til forsvar
+
+FELT:
+• drommeMal → "" hvis ikke nevnt
+• mal → kun mål eksplisitt diskutert, maks 3
+• tiltak → [] hvis ingen konkrete tiltak ble nevnt
+• maling → [] hvis ikke diskutert
+
+Kategorier: fotball|kultur|mentalitet|fysisk
+Prioritet: Høy|Middels|Lav
+
+RETURNER KUN dette JSON:
+{"drommeMal":"","type":"Spillersamtale","mal":[{"tittel":"","kortbeskrivelse":"","prioritet":"Høy","kategori":"fotball","spillfase":"","ikon":"🎯","detaljer":{"mal":"","tiltak":[],"maling":[]}}]}`;
+
+// ── Storage (localStorage) ────────────────────────────────────────────────────
+const LS={
+  getPlayers:()=>{try{return JSON.parse(localStorage.getItem('g17_players')||'[]')}catch{return[]}},
+  savePlayers:l=>localStorage.setItem('g17_players',JSON.stringify(l)),
+  getConvs:id=>{try{return JSON.parse(localStorage.getItem(`g17_c_${id}`)||'[]')}catch{return[]}},
+  saveConvs:(id,l)=>localStorage.setItem(`g17_c_${id}`,JSON.stringify(l)),
+  getLogo:()=>localStorage.getItem('g17_logo')||null,
+  saveLogo:v=>localStorage.setItem('g17_logo',v),
+  getApiKey:()=>localStorage.getItem('g17_apikey')||'',
+  saveApiKey:v=>localStorage.setItem('g17_apikey',v),
+};
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+const gruppeForPos=p=>GRUPPER.find(g=>g.posisjoner.includes(p))||{label:"Andre",ikon:"👟",farge:C.grey};
+
+function aktivitetStatus(dato){
+  if(!dato)return{bg:"rgba(231,76,60,0.1)",txt:"#b03a2e",border:"rgba(231,76,60,0.35)",label:"Ingen samtale",dot:"#e74c3c"};
+  const parts=dato.split('.');
+  let d;
+  if(parts.length===3){const[day,mon,yr]=parts;d=new Date(`${yr}-${mon.padStart(2,'0')}-${day.padStart(2,'0')}`);}
+  else d=new Date(dato);
+  const days=Math.floor((Date.now()-d)/86400000);
+  if(isNaN(days)||days<0||days>500)return{bg:"rgba(231,76,60,0.1)",txt:"#b03a2e",border:"rgba(231,76,60,0.35)",label:"Ingen samtale",dot:"#e74c3c"};
+  if(days<=14)return{bg:"rgba(39,174,96,0.1)",txt:"#1e7e34",border:"rgba(39,174,96,0.35)",label:"Siste 2 uker",dot:"#27ae60"};
+  if(days<=35)return{bg:"rgba(243,156,18,0.1)",txt:"#b7770a",border:"rgba(243,156,18,0.35)",label:"3–5 uker siden",dot:"#f39c12"};
+  return{bg:"rgba(231,76,60,0.1)",txt:"#b03a2e",border:"rgba(231,76,60,0.35)",label:"Over 6 uker siden",dot:"#e74c3c"};
+}
+function dagTall(dato){
+  if(!dato)return 999;
+  const parts=dato.split('.');
+  let d;
+  if(parts.length===3){const[day,mon,yr]=parts;d=new Date(`${yr}-${mon.padStart(2,'0')}-${day.padStart(2,'0')}`);}
+  else d=new Date(dato);
+  const v=Math.floor((Date.now()-d)/86400000);
+  return(isNaN(v)||v<0)?999:v;
+}
+const todayStr=()=>{const d=new Date();return`${d.getDate()}.${d.getMonth()+1}.${d.getFullYear()}`};
+
+// ── UI-komponenter ────────────────────────────────────────────────────────────
+function PrioritetBadge({p}){
+  const s={Høy:{bg:"rgba(201,168,76,0.15)",color:"#B8860B",border:"rgba(201,168,76,0.5)"},
+    Middels:{bg:"rgba(26,75,140,0.12)",color:"#1A4B8C",border:"rgba(26,75,140,0.4)"},
+    Lav:{bg:"rgba(60,179,113,0.12)",color:"#2E8B57",border:"rgba(60,179,113,0.4)"}}[p]||{};
+  return<span style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",padding:"3px 10px",borderRadius:20,background:s.bg,color:s.color,border:`1px solid ${s.border}`}}>{p}</span>;
+}
+function TypeBadge({type,liten}){
+  const t=SAMTALE_TYPER.find(x=>x.id===type)||SAMTALE_TYPER[0];
+  return<span style={{display:"inline-flex",alignItems:"center",gap:4,padding:liten?"2px 8px":"4px 10px",borderRadius:20,background:t.farge+"18",border:`1px solid ${t.farge}55`,fontSize:liten?10:11,color:t.farge,whiteSpace:"nowrap"}}>{t.ikon} {type}</span>;
+}
+
+// ── NåværendeMål ──────────────────────────────────────────────────────────────
+function NåværendeMål({samtale,gruppe}){
+  const[valgt,setValgt]=useState(null);
+  const[tab,setTab]=useState("mal");
+  const[kat,setKat]=useState("fotball");
+  const aktivt=(samtale.mal||[]).find(m=>m.tittel===valgt);
+  const filtrert=(samtale.mal||[]).filter(m=>(m.kategori||"fotball")===kat);
+  return(
+    <div style={{marginBottom:20}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+        <div style={{fontSize:10,color:C.gold,letterSpacing:2,textTransform:"uppercase"}}>🎯 Nåværende utviklingsmål</div>
+        <div style={{height:1,flex:1,background:"rgba(201,168,76,0.25)"}}/>
+        <TypeBadge type={samtale.type||"Spillersamtale"} liten/>
+        <span style={{fontSize:10,color:C.grey}}>· {samtale.dato}</span>
+      </div>
+      {samtale.notat&&<div style={{background:"rgba(201,168,76,0.07)",borderRadius:10,padding:"9px 13px",marginBottom:10,borderLeft:`3px solid ${C.gold}`}}><div style={{fontSize:9,color:C.gold,letterSpacing:2,textTransform:"uppercase",marginBottom:3}}>📋 Notat</div><p style={{margin:0,fontSize:12,color:C.text,lineHeight:1.75,fontStyle:"italic"}}>{samtale.notat}</p></div>}
+      <div style={{display:"flex",background:C.white,borderRadius:12,padding:4,gap:3,marginBottom:12,boxShadow:"0 2px 10px rgba(11,34,101,0.07)"}}>
+        {KATEGORIER.map(k=>{
+          const ant=(samtale.mal||[]).filter(m=>(m.kategori||"fotball")===k.id).length;
+          const aktiv=kat===k.id;
+          return<button key={k.id} onClick={()=>{setKat(k.id);setValgt(null);}} style={{flex:1,padding:"7px 4px",borderRadius:9,border:"none",cursor:"pointer",background:aktiv?k.farge:"transparent",transition:"all 0.2s",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+            <span style={{fontSize:15}}>{k.ikon}</span>
+            <span style={{fontSize:10,fontWeight:aktiv?"bold":"normal",color:aktiv?C.white:C.grey}}>{k.label}</span>
+            {ant>0&&<span style={{fontSize:9,color:aktiv?"rgba(255,255,255,0.8)":k.farge}}>{ant} mål</span>}
+          </button>;
+        })}
+      </div>
+      {filtrert.length===0
+        ?<div style={{background:C.white,borderRadius:12,padding:"22px 18px",textAlign:"center",boxShadow:"0 2px 10px rgba(11,34,101,0.06)"}}><div style={{fontSize:22,marginBottom:5}}>{KATEGORIER.find(k=>k.id===kat)?.ikon}</div><div style={{fontSize:12,color:C.grey}}>Ingen {kat}-mål i denne samtalen</div></div>
+        :<div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {filtrert.map((m,i)=>{
+            const k2=KATEGORIER.find(k=>k.id===(m.kategori||"fotball"));
+            const erV=valgt===m.tittel;
+            return<div key={i} onClick={()=>{setValgt(erV?null:m.tittel);setTab("mal");}} style={{background:C.white,borderRadius:12,boxShadow:"0 2px 12px rgba(11,34,101,0.08)",overflow:"hidden",cursor:"pointer",borderLeft:`4px solid ${erV?C.gold:k2?.farge||gruppe.farge}`,transition:"all 0.2s"}}>
+              <div style={{padding:"12px 15px",display:"flex",alignItems:"center",gap:10,background:erV?`${C.navy}06`:"transparent"}}>
+                <div style={{minWidth:34,height:34,borderRadius:"50%",background:erV?C.navy:C.offWhite,color:erV?C.gold:C.navy,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,border:`2px solid ${erV?C.gold:C.greyLight}`,transition:"all 0.2s",flexShrink:0}}>{m.ikon||"🎯"}</div>
+                <div style={{flex:1}}>
+                  <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3,flexWrap:"wrap"}}><span style={{fontSize:13,fontWeight:"bold",color:C.text}}>{m.tittel}</span><PrioritetBadge p={m.prioritet}/></div>
+                  {m.spillfase&&<div style={{display:"inline-flex",alignItems:"center",gap:3,padding:"2px 8px",borderRadius:20,background:`${k2?.farge||C.blue}12`,border:`1px solid ${k2?.farge||C.blue}33`,marginBottom:3}}><span style={{fontSize:9,color:k2?.farge||C.blue}}>📍</span><span style={{fontSize:11,color:C.text}}>{m.spillfase}</span></div>}
+                  <p style={{margin:0,fontSize:12,color:C.grey,lineHeight:1.5}}>{m.kortbeskrivelse}</p>
+                </div>
+                <div style={{fontSize:16,color:C.gold,opacity:erV?1:0.35,transform:erV?"rotate(90deg)":"rotate(0deg)",transition:"transform 0.22s",flexShrink:0}}>›</div>
+              </div>
+              {erV&&aktivt&&<div style={{borderTop:`1px solid ${C.greyLight}`}}>
+                <div style={{display:"flex",background:C.offWhite,borderBottom:`1px solid ${C.greyLight}`}}>
+                  {[{id:"mal",label:"🎯 Mål"},{id:"tiltak",label:"🔧 Tiltak"},{id:"maling",label:"📊 Måling"}].map(t=><button key={t.id} onClick={e=>{e.stopPropagation();setTab(t.id);}} style={{flex:1,padding:"9px 4px",border:"none",borderBottom:tab===t.id?`3px solid ${C.gold}`:"3px solid transparent",background:"transparent",color:tab===t.id?C.navy:C.grey,fontSize:11,fontWeight:tab===t.id?"bold":"normal",cursor:"pointer"}}>{t.label}</button>)}
+                </div>
+                <div style={{padding:"14px 16px",background:C.white}}>
+                  {tab==="mal"&&<p style={{margin:0,fontSize:13,color:C.text,lineHeight:1.85}}>{aktivt.detaljer?.mal}</p>}
+                  {tab==="tiltak"&&<div style={{display:"flex",flexDirection:"column",gap:8}}>{(aktivt.detaljer?.tiltak||[]).map((t,ti)=><div key={ti} style={{display:"flex",gap:10,alignItems:"flex-start",padding:"9px 12px",background:C.offWhite,borderRadius:9}}><div style={{minWidth:22,height:22,borderRadius:"50%",background:C.navy,color:C.gold,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:"bold",flexShrink:0}}>{ti+1}</div><p style={{margin:0,fontSize:13,color:C.text,lineHeight:1.7}}>{t}</p></div>)}</div>}
+                  {tab==="maling"&&<div style={{display:"flex",flexDirection:"column",gap:8}}>{(aktivt.detaljer?.maling||[]).map((ml,mi)=><div key={mi} style={{display:"flex",gap:10,alignItems:"flex-start",padding:"9px 12px",background:C.offWhite,borderRadius:9,borderLeft:`3px solid ${C.gold}`}}><span style={{fontSize:15,flexShrink:0}}>📏</span><p style={{margin:0,fontSize:13,color:C.text,lineHeight:1.7}}>{ml}</p></div>)}</div>}
+                </div>
+              </div>}
+            </div>;
+          })}
+        </div>
+      }
+      {samtale.drommeMal&&<div style={{marginTop:10,background:C.navy,borderRadius:10,padding:"13px 16px",display:"flex",alignItems:"flex-start",gap:10}}><span style={{fontSize:18,color:C.gold,flexShrink:0}}>⭐</span><div><div style={{fontSize:9,color:C.gold,letterSpacing:2,textTransform:"uppercase",marginBottom:4}}>Drømmemål</div><p style={{margin:0,fontSize:12,fontStyle:"italic",color:C.cream,lineHeight:1.8}}>{samtale.drommeMal}</p></div></div>}
+    </div>
+  );
+}
+
+// ── Manuelt skjema for mål ────────────────────────────────────────────────────
+function MalSkjema({mal,onChange,onSlett,idx}){
+  const kat=KATEGORIER.find(k=>k.id===mal.kategori)||KATEGORIER[0];
+  return(
+    <div style={{background:C.white,borderRadius:12,padding:18,marginBottom:12,borderLeft:`4px solid ${kat.farge}`,boxShadow:"0 2px 12px rgba(11,34,101,0.07)"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+        <span style={{fontSize:13,fontWeight:"bold",color:C.text}}>Mål {idx+1}</span>
+        <button onClick={onSlett} style={{padding:"3px 10px",borderRadius:6,border:"1px solid #ffaaaa",background:"transparent",color:"#c0392b",fontSize:11,cursor:"pointer"}}>Slett</button>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+        {[{l:"Tittel",k:"tittel",p:"Kort tittel (maks 5 ord)"},{l:"Kategori",k:"kategori",type:"select"}].map(f=><div key={f.k}>
+          <div style={{fontSize:10,color:C.grey,marginBottom:4,letterSpacing:1,textTransform:"uppercase"}}>{f.l}</div>
+          {f.type==="select"
+            ?<select value={mal.kategori} onChange={e=>onChange("kategori",e.target.value)} style={{width:"100%",padding:"8px 10px",border:`1px solid ${C.greyLight}`,borderRadius:8,fontSize:13,color:C.text,background:C.offWhite,outline:"none"}}>
+              {KATEGORIER.map(k=><option key={k.id} value={k.id}>{k.ikon} {k.label}</option>)}
+            </select>
+            :<input value={mal[f.k]||""} onChange={e=>onChange(f.k,e.target.value)} placeholder={f.p} style={{width:"100%",padding:"8px 10px",border:`1px solid ${C.greyLight}`,borderRadius:8,fontSize:13,color:C.text,background:C.offWhite,outline:"none",boxSizing:"border-box"}}/>}
+        </div>)}
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+        <div>
+          <div style={{fontSize:10,color:C.grey,marginBottom:4,letterSpacing:1,textTransform:"uppercase"}}>Spillfase</div>
+          <select value={mal.spillfase||""} onChange={e=>onChange("spillfase",e.target.value)} style={{width:"100%",padding:"8px 10px",border:`1px solid ${C.greyLight}`,borderRadius:8,fontSize:13,color:C.text,background:C.offWhite,outline:"none"}}>
+            <option value="">Velg spillfase</option>
+            {SPILLFASER_LISTE.map(g=><optgroup key={g.gruppe} label={g.gruppe}>{g.faser.map(f=><option key={f} value={f}>{f}</option>)}</optgroup>)}
+          </select>
+        </div>
+        <div>
+          <div style={{fontSize:10,color:C.grey,marginBottom:4,letterSpacing:1,textTransform:"uppercase"}}>Prioritet</div>
+          <select value={mal.prioritet||"Høy"} onChange={e=>onChange("prioritet",e.target.value)} style={{width:"100%",padding:"8px 10px",border:`1px solid ${C.greyLight}`,borderRadius:8,fontSize:13,color:C.text,background:C.offWhite,outline:"none"}}>
+            {["Høy","Middels","Lav"].map(p=><option key={p}>{p}</option>)}
+          </select>
+        </div>
+      </div>
+      <div style={{marginBottom:10}}>
+        <div style={{fontSize:10,color:C.grey,marginBottom:4,letterSpacing:1,textTransform:"uppercase"}}>Kort beskrivelse</div>
+        <input value={mal.kortbeskrivelse||""} onChange={e=>onChange("kortbeskrivelse",e.target.value)} placeholder="Én setning om målet" style={{width:"100%",padding:"8px 10px",border:`1px solid ${C.greyLight}`,borderRadius:8,fontSize:13,color:C.text,background:C.offWhite,outline:"none",boxSizing:"border-box"}}/>
+      </div>
+      <div style={{marginBottom:10}}>
+        <div style={{fontSize:10,color:C.grey,marginBottom:4,letterSpacing:1,textTransform:"uppercase"}}>Detaljert mål</div>
+        <textarea value={mal.detaljerMal||""} onChange={e=>onChange("detaljerMal",e.target.value)} placeholder="Hva skal spilleren konkret oppnå?" rows={2} style={{width:"100%",padding:"8px 10px",border:`1px solid ${C.greyLight}`,borderRadius:8,fontSize:13,color:C.text,background:C.offWhite,outline:"none",resize:"vertical",boxSizing:"border-box"}}/>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+        {[{l:"Tiltak (ett per linje)",k:"tiltak",p:"Tiltak 1\nTiltak 2"},{l:"Måling (ett per linje)",k:"maling",p:"Måleparameter 1"}].map(f=><div key={f.k}>
+          <div style={{fontSize:10,color:C.grey,marginBottom:4,letterSpacing:1,textTransform:"uppercase"}}>{f.l}</div>
+          <textarea value={mal[f.k]||""} onChange={e=>onChange(f.k,e.target.value)} placeholder={f.p} rows={3} style={{width:"100%",padding:"8px 10px",border:`1px solid ${C.greyLight}`,borderRadius:8,fontSize:12,color:C.text,background:C.offWhite,outline:"none",resize:"vertical",boxSizing:"border-box"}}/>
+        </div>)}
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// HOVED-APP
+// ════════════════════════════════════════════════════════════════════════════
+function App(){
+  const[view,setView]=useState("overview");
+  const[players,setPlayers]=useState([]);
+  const[selected,setSelected]=useState(null);
+  const[convs,setConvs]=useState([]);
+  const[aktivFilter,setAktivFilter]=useState("alle");
+  const[showAdd,setShowAdd]=useState(false);
+  const[logo,setLogo]=useState(null);
+  const[apiKey,setApiKey]=useState("");
+  const[showSettings,setShowSettings]=useState(false);
+  const[expandedConv,setExpandedConv]=useState(null);
+  const[form,setForm]=useState({navn:"",alder:"",posisjon:""});
+  // Ny samtale
+  const[convTab,setConvTab]=useState("manuell");
+  const[samtaleForm,setSamtaleForm]=useState(null);
+  const[sfInput,setSfInput]=useState("");
+  const[analyseTekst,setAnalyseTekst]=useState("");
+  const[analyzing,setAnalyzing]=useState(false);
+  const[convResult,setConvResult]=useState(null);
+  const[convFeil,setConvFeil]=useState("");
+  const[editingConv,setEditingConv]=useState(null);
+  const logoRef=useRef();
+
+  useEffect(()=>{
+    setPlayers(LS.getPlayers());
+    setLogo(LS.getLogo());
+    setApiKey(LS.getApiKey());
+  },[]);
+
+  // ── Spillerhandlinger ─────────────────────────────────────────────────────
+  function leggTilSpiller(){
+    if(!form.navn.trim()||!form.posisjon)return;
+    const ny={id:uid(),...form,alder:parseInt(form.alder)||0,dato:todayStr(),antallSamtaler:0};
+    const op=[...players,ny];
+    LS.savePlayers(op);setPlayers(op);
+    setForm({navn:"",alder:"",posisjon:""});setShowAdd(false);
+  }
+  function slettSpiller(pid){
+    if(!confirm("Slett spilleren og alle samtaler?"))return;
+    const op=players.filter(p=>p.id!==pid);
+    LS.savePlayers(op);setPlayers(op);
+    localStorage.removeItem(`g17_c_${pid}`);
+    setView("overview");setSelected(null);
+  }
+  function velgSpiller(p){
+    setSelected(p);setConvs(LS.getConvs(p.id));
+    setView("player");setExpandedConv(null);setConvResult(null);
+  }
+
+  // ── Lagre samtale ─────────────────────────────────────────────────────────
+  function lagreConv(convData){
+    const ny={id:uid(),...convData};
+    const op=[...convs,ny];
+    LS.saveConvs(selected.id,op);setConvs(op);
+    const upP=players.map(p=>p.id===selected.id?{...p,sisteAktivitet:ny.dato,antallSamtaler:(p.antallSamtaler||0)+1}:p);
+    LS.savePlayers(upP);setPlayers(upP);
+    setSelected(upP.find(p=>p.id===selected.id));
+    setView("player");setSamtaleForm(null);setConvResult(null);
+  }
+
+  function lagreManuell(){
+    if(!samtaleForm)return;
+    const dato=samtaleForm.dato||todayStr();
+    lagreConv({
+      type:samtaleForm.type,dato,
+      spillfaser:samtaleForm.spillfaser,
+      notat:samtaleForm.notat,drommeMal:"",
+      mal:(samtaleForm.mal||[]).filter(m=>m.tittel.trim()).map(m=>({
+        tittel:m.tittel,kortbeskrivelse:m.kortbeskrivelse||"",
+        prioritet:m.prioritet||"Høy",kategori:m.kategori||"fotball",
+        spillfase:m.spillfase||"",ikon:KATEGORIER.find(k=>k.id===m.kategori)?.ikon||"🎯",
+        detaljer:{
+          mal:m.detaljerMal||m.kortbeskrivelse||"",
+          tiltak:m.tiltak?m.tiltak.split("\n").filter(Boolean):[],
+          maling:m.maling?m.maling.split("\n").filter(Boolean):[],
+        }
+      }))
+    });
+  }
+
+  async function analyser(){
+    if(!analyseTekst.trim()||!apiKey.trim()){setConvFeil("Fyll inn transkripsjon og API-nøkkel (i ⚙️ Innstillinger).");return;}
+    setAnalyzing(true);setConvFeil("");setConvResult(null);
+    try{
+      const res=await fetch("https://api.groq.com/openai/v1/chat/completions",{
+        method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${apiKey}`},
+        body:JSON.stringify({model:"llama-3.3-70b-versatile",max_tokens:2000,
+          messages:[
+            {role:"system",content:SYSTEM_PROMPT},
+            {role:"user",content:`Spiller: ${selected.navn}, ${selected.alder} år, ${selected.posisjon}.\n\nSamtale:\n${analyseTekst}`}
+          ]})
+      });
+      const json=await res.json();
+      if(json.error)throw new Error(json.error.message||json.error);
+      const raw=json.choices?.[0]?.message?.content||"";
+      const s=raw.indexOf("{"),e=raw.lastIndexOf("}");
+      if(s===-1||e===-1)throw new Error("Ingen JSON i svaret. Prøv igjen.");
+      const parsed=JSON.parse(raw.slice(s,e+1).replace(/\r/g,"").replace(/\t/g," "));
+      setConvResult({...parsed,dato:todayStr()});
+    }catch(err){setConvFeil("Feil: "+err.message);}
+    setAnalyzing(false);
+  }
+
+  function lagreAnalysert(){
+    if(!convResult)return;
+    lagreConv({...convResult,spillfaser:convResult.spillfaser||[]});
+  }
+
+  function slettConv(cid){
+    if(!confirm("Slett denne samtalen?"))return;
+    const op=convs.filter(c=>c.id!==cid);
+    LS.saveConvs(selected.id,op);setConvs(op);
+    const upP=players.map(p=>p.id===selected.id?{...p,antallSamtaler:Math.max(0,(p.antallSamtaler||1)-1)}:p);
+    LS.savePlayers(upP);setPlayers(upP);setSelected(upP.find(p=>p.id===selected.id));
+  }
+
+  // ── Stats ─────────────────────────────────────────────────────────────────
+  const totalSamtaler=players.reduce((s,p)=>s+(p.antallSamtaler||0),0);
+  const grønne=players.filter(p=>dagTall(p.sisteAktivitet)<=14).length;
+  const røde=players.filter(p=>dagTall(p.sisteAktivitet)>35).length;
+
+  // ── Felles header ─────────────────────────────────────────────────────────
+  function Header({tittel,sub,tilbake}){
+    return(
+      <div style={{background:`linear-gradient(135deg,${C.navy},#0d2a6e 60%,${C.blue})`,borderRadius:16,padding:"20px 24px",marginBottom:16,boxShadow:"0 4px 32px rgba(11,34,101,0.22)",position:"relative",overflow:"hidden"}}>
+        <div style={{position:"absolute",right:-40,top:-40,width:180,height:180,background:`radial-gradient(circle,${C.gold}18 0%,transparent 70%)`,pointerEvents:"none"}}/>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <input ref={logoRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=ev=>{setLogo(ev.target.result);LS.saveLogo(ev.target.result);};r.readAsDataURL(f);}}/>
+            <div onClick={()=>logoRef.current.click()} title="Last opp logo" style={{width:44,height:44,borderRadius:8,cursor:"pointer",border:`2px dashed ${logo?"transparent":C.gold}`,background:logo?"transparent":"rgba(201,168,76,0.08)",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",flexShrink:0}}>
+              {logo?<img src={logo} alt="logo" style={{width:"100%",height:"100%",objectFit:"contain"}}/>:<span style={{fontSize:7,color:C.gold,textAlign:"center",lineHeight:1.4}}>Logo</span>}
+            </div>
+            <div>
+              <div style={{fontSize:9,letterSpacing:3,color:C.gold,textTransform:"uppercase",marginBottom:2}}>Stabæk Fotball · G17</div>
+              <div style={{fontSize:18,fontWeight:"bold",color:C.white,lineHeight:1.2}}>{tittel}</div>
+              {sub&&<div style={{fontSize:11,color:"rgba(200,208,220,0.8)",marginTop:2}}>{sub}</div>}
+            </div>
+          </div>
+          <div style={{display:"flex",gap:8}}>
+            {tilbake&&<button onClick={tilbake} style={{padding:"7px 14px",borderRadius:8,border:`1px solid rgba(201,168,76,0.4)`,background:"rgba(201,168,76,0.1)",color:C.gold,fontSize:12,cursor:"pointer",fontWeight:"bold"}}>← Tilbake</button>}
+            <button onClick={()=>setShowSettings(!showSettings)} title="Innstillinger" style={{padding:"7px 12px",borderRadius:8,border:`1px solid rgba(201,168,76,0.3)`,background:"rgba(255,255,255,0.08)",color:C.greyLight,fontSize:14,cursor:"pointer"}}>⚙️</button>
+          </div>
+        </div>
+        {showSettings&&(
+          <div style={{marginTop:14,paddingTop:12,borderTop:"1px solid rgba(201,168,76,0.2)"}}>
+            <div style={{fontSize:10,color:C.gold,letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>API-nøkkel (Anthropic Claude)</div>
+            <div style={{display:"flex",gap:8}}>
+              <input type="password" value={apiKey} onChange={e=>setApiKey(e.target.value)} placeholder="gsk_xxxxxxxxxxxxxxxxxxxx" style={{flex:1,padding:"8px 12px",border:"1px solid rgba(201,168,76,0.3)",borderRadius:8,background:"rgba(255,255,255,0.08)",color:C.white,fontSize:12,outline:"none"}}/>
+              <button onClick={()=>{LS.saveApiKey(apiKey);setShowSettings(false);}} style={{padding:"8px 14px",borderRadius:8,border:"none",background:C.gold,color:C.navy,fontSize:12,cursor:"pointer",fontWeight:"bold"}}>Lagre</button>
+            </div>
+            <div style={{fontSize:10,color:C.grey,marginTop:5}}>Gratis API-nøkkel – hent på console.groq.com (ingen betalingskort nødvendig)</div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════════════════
+  // VIEW: OVERSIKT
+  // ════════════════════════════════════════════════════════════════════════
+  if(view==="overview")return(
+    <div style={{fontFamily:"Georgia,serif",background:C.offWhite,minHeight:"100vh",padding:"24px 16px"}}>
+      <div style={{maxWidth:760,margin:"0 auto"}}>
+        <Header tittel="Spilleroversikt" sub={`${players.length} spillere · ${totalSamtaler} samtaler`}/>
+
+        {/* Stat-kort */}
+        {players.length>0&&<div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
+          {[
+            {id:"alle",ikon:"👥",tall:players.length,label:"Spillere",farge:C.navy},
+            {id:"samtaler",ikon:"💬",tall:totalSamtaler,label:"Samtaler",farge:C.blue},
+            {id:"grønn",ikon:"🟢",tall:grønne,label:"Aktive 2 uker",farge:"#27ae60"},
+            {id:"rød",ikon:"🔴",tall:røde,label:"Trenger oppfølging",farge:"#e74c3c"},
+          ].map(s=>{
+            const erA=aktivFilter===s.id;
+            return<div key={s.id} onClick={()=>setAktivFilter(erA?"alle":s.id)} style={{background:erA?C.navy:C.white,borderRadius:12,padding:"12px 10px",textAlign:"center",boxShadow:erA?"0 4px 20px rgba(11,34,101,0.22)":"0 2px 10px rgba(11,34,101,0.06)",borderTop:`3px solid ${s.farge}`,cursor:"pointer",transition:"all 0.2s",transform:erA?"translateY(-2px)":"none"}}>
+              <div style={{fontSize:18,marginBottom:3}}>{s.ikon}</div>
+              <div style={{fontSize:22,fontWeight:"bold",color:erA?C.gold:C.navy}}>{s.tall}</div>
+              <div style={{fontSize:9,color:erA?C.greyLight:C.grey,letterSpacing:1,textTransform:"uppercase",lineHeight:1.4}}>{s.label}</div>
+              {erA&&<div style={{marginTop:4,fontSize:8,color:"rgba(255,255,255,0.4)",letterSpacing:1}}>AKTIVT FILTER</div>}
+            </div>;
+          })}
+        </div>}
+
+        {/* Legg til-knapp og filterindikator */}
+        <div style={{display:"flex",gap:10,marginBottom:14,alignItems:"center",flexWrap:"wrap"}}>
+          <button onClick={()=>setShowAdd(!showAdd)} style={{padding:"9px 18px",borderRadius:10,border:"none",background:showAdd?"rgba(11,34,101,0.08)":C.navy,color:showAdd?C.navy:C.white,fontSize:13,cursor:"pointer",fontWeight:"bold",border:`1px solid ${showAdd?C.greyLight:"transparent"}`}}>
+            {showAdd?"✕ Avbryt":"+ Legg til spiller"}
+          </button>
+          {aktivFilter!=="alle"&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:C.white,borderRadius:10,boxShadow:"0 2px 8px rgba(11,34,101,0.07)",border:`1px solid ${C.greyLight}`,flex:1}}>
+            <span style={{fontSize:13,color:C.text,flex:1}}>{aktivFilter==="grønn"?"🟢 Aktive siste 2 uker":aktivFilter==="rød"?"🔴 Trenger oppfølging":"💬 Sortert etter samtaler"}</span>
+            <button onClick={()=>setAktivFilter("alle")} style={{padding:"3px 10px",borderRadius:8,border:`1px solid ${C.greyLight}`,background:"transparent",color:C.grey,fontSize:11,cursor:"pointer"}}>Vis alle ✕</button>
+          </div>}
+        </div>
+
+        {/* Legg til-form */}
+        {showAdd&&<div style={{background:C.white,borderRadius:14,padding:20,marginBottom:16,boxShadow:"0 4px 20px rgba(11,34,101,0.10)",border:`1px solid ${C.greyLight}`}}>
+          <div style={{fontSize:13,fontWeight:"bold",color:C.text,marginBottom:14}}>Ny spiller</div>
+          <div style={{display:"grid",gridTemplateColumns:"2fr 80px 1fr",gap:10,marginBottom:12}}>
+            <div><div style={{fontSize:10,color:C.grey,marginBottom:4,letterSpacing:1,textTransform:"uppercase"}}>Navn *</div>
+              <input value={form.navn} onChange={e=>setForm({...form,navn:e.target.value})} placeholder="Fornavn Etternavn" style={{width:"100%",padding:"9px 12px",border:`1px solid ${C.greyLight}`,borderRadius:8,fontSize:13,color:C.text,background:C.offWhite,outline:"none",boxSizing:"border-box"}}/></div>
+            <div><div style={{fontSize:10,color:C.grey,marginBottom:4,letterSpacing:1,textTransform:"uppercase"}}>Alder</div>
+              <input type="number" value={form.alder} onChange={e=>setForm({...form,alder:e.target.value})} placeholder="17" style={{width:"100%",padding:"9px 12px",border:`1px solid ${C.greyLight}`,borderRadius:8,fontSize:13,color:C.text,background:C.offWhite,outline:"none",boxSizing:"border-box"}}/></div>
+            <div><div style={{fontSize:10,color:C.grey,marginBottom:4,letterSpacing:1,textTransform:"uppercase"}}>Posisjon</div>
+              <select value={form.posisjon} onChange={e=>setForm({...form,posisjon:e.target.value})} style={{width:"100%",padding:"9px 12px",border:`1px solid ${C.greyLight}`,borderRadius:8,fontSize:13,color:C.text,background:C.offWhite,outline:"none"}}>
+                <option value="">Velg</option>
+                {GRUPPER.map(g=><optgroup key={g.label} label={g.ikon+" "+g.label}>{g.posisjoner.map(p=><option key={p} value={p}>{p}</option>)}</optgroup>)}
+              </select></div>
+          </div>
+          <div style={{display:"flex",gap:10}}>
+            <button onClick={()=>setShowAdd(false)} style={{padding:"9px 16px",borderRadius:8,border:`1px solid ${C.greyLight}`,background:C.offWhite,color:C.grey,fontSize:12,cursor:"pointer"}}>Avbryt</button>
+            <button onClick={leggTilSpiller} disabled={!form.navn.trim()||!form.posisjon} style={{flex:1,padding:"9px",borderRadius:8,border:"none",background:(form.navn.trim()&&form.posisjon)?C.navy:C.greyLight,color:(form.navn.trim()&&form.posisjon)?C.white:C.grey,fontSize:13,cursor:(form.navn.trim()&&form.posisjon)?"pointer":"default",fontWeight:"bold"}}>Lagre spiller</button>
+          </div>
+        </div>}
+
+        {/* Spillerliste */}
+        {players.length===0
+          ?<div style={{background:C.white,borderRadius:14,padding:"52px 24px",textAlign:"center",boxShadow:"0 2px 16px rgba(11,34,101,0.06)"}}>
+            <div style={{fontSize:44,marginBottom:14}}>👥</div>
+            <div style={{fontSize:17,fontWeight:"bold",color:C.text,marginBottom:8}}>Ingen spillere ennå</div>
+            <div style={{fontSize:13,color:C.grey,marginBottom:18}}>Trykk «+ Legg til spiller» for å komme i gang.</div>
+          </div>
+          :<div style={{display:"flex",flexDirection:"column",gap:20}}>
+            {GRUPPER.map(g=>{
+              let sp=players.filter(p=>g.posisjoner.includes(p.posisjon));
+              if(aktivFilter==="grønn")sp=sp.filter(p=>dagTall(p.sisteAktivitet)<=14);
+              if(aktivFilter==="rød")sp=sp.filter(p=>dagTall(p.sisteAktivitet)>35);
+              if(aktivFilter==="samtaler")sp=[...sp].sort((a,b)=>b.antallSamtaler-a.antallSamtaler);
+              if(!sp.length)return null;
+              return<div key={g.label}>
+                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+                  <div style={{width:34,height:34,borderRadius:"50%",background:g.farge,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,flexShrink:0}}>{g.ikon}</div>
+                  <span style={{fontSize:15,fontWeight:"bold",color:C.text}}>{g.label}</span>
+                  <span style={{fontSize:12,color:C.grey}}>· {sp.length} spiller{sp.length!==1?"e":""}</span>
+                  <div style={{height:1,flex:1,background:C.greyLight}}/>
+                </div>
+                <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                  {sp.map(p=>{
+                    const st=aktivitetStatus(p.sisteAktivitet);
+                    const c0=LS.getConvs(p.id);
+                    const sisteMedMal=[...c0].reverse().find(s=>s.mal?.some(m=>m.tittel?.trim()));
+                    const akt=sisteMedMal?.mal?.[0];
+                    const kat2=KATEGORIER.find(k=>k.id===akt?.kategori);
+                    return<div key={p.id} onClick={()=>velgSpiller(p)} style={{background:C.white,borderRadius:12,overflow:"hidden",boxShadow:"0 2px 12px rgba(11,34,101,0.07)",cursor:"pointer",borderLeft:`4px solid ${g.farge}`,transition:"all 0.18s"}}
+                      onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 6px 20px rgba(11,34,101,0.13)";e.currentTarget.style.borderLeftColor=C.gold;}}
+                      onMouseLeave={e=>{e.currentTarget.style.boxShadow="0 2px 12px rgba(11,34,101,0.07)";e.currentTarget.style.borderLeftColor=g.farge;}}>
+                      <div style={{display:"flex",alignItems:"center",gap:12,padding:"13px 16px"}}>
+                        <div style={{width:40,height:40,borderRadius:"50%",background:`linear-gradient(135deg,${C.navy},${C.blue})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:"bold",color:C.gold,flexShrink:0}}>{p.navn.charAt(0)}</div>
+                        <div style={{minWidth:150,flexShrink:0}}>
+                          <div style={{fontWeight:"bold",color:C.text,fontSize:14,marginBottom:2}}>{p.navn}</div>
+                          <div style={{fontSize:11,color:C.grey}}>{p.posisjon}{p.alder>0?` · ${p.alder} år`:""}</div>
+                        </div>
+                        <div style={{flex:1,minWidth:0}}>
+                          {akt?<div style={{display:"flex",alignItems:"center",gap:5}}>{kat2&&<span style={{fontSize:13,flexShrink:0}}>{kat2.ikon}</span>}<span style={{fontSize:12,color:C.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{akt.tittel}</span></div>:<span style={{fontSize:11,color:C.greyLight,fontStyle:"italic"}}>Ingen mål registrert</span>}
+                        </div>
+                        <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+                          <div style={{textAlign:"center",minWidth:32}}><div style={{fontSize:17,fontWeight:"bold",color:p.antallSamtaler>0?C.navy:C.greyLight}}>{p.antallSamtaler||0}</div><div style={{fontSize:9,color:C.grey,letterSpacing:1}}>SAMTAL.</div></div>
+                          <div style={{display:"inline-flex",alignItems:"center",gap:5,padding:"4px 9px",borderRadius:20,background:st.bg,border:`1px solid ${st.border}`,minWidth:100}}><div style={{width:7,height:7,borderRadius:"50%",background:st.dot,flexShrink:0}}/><span style={{fontSize:10,color:st.txt,whiteSpace:"nowrap"}}>{st.label}</span></div>
+                        </div>
+                        <div style={{fontSize:15,color:C.gold,opacity:0.4}}>›</div>
+                      </div>
+                    </div>;
+                  })}
+                </div>
+              </div>;
+            })}
+          </div>
+        }
+        <div style={{textAlign:"center",marginTop:18,fontSize:10,color:C.greyLight,letterSpacing:1}}>STABÆK FOTBALL · G17 · KONFIDENSIELT</div>
+      </div>
+    </div>
+  );
+
+  // ════════════════════════════════════════════════════════════════════════
+  // VIEW: SPILLERPROFIL
+  // ════════════════════════════════════════════════════════════════════════
+  if(view==="player"&&selected){
+    const gruppe=gruppeForPos(selected.posisjon);
+    const sisteMedMal=[...convs].reverse().find(s=>s.mal?.some(m=>m.tittel?.trim()));
+    return(
+      <div style={{fontFamily:"Georgia,serif",background:C.offWhite,minHeight:"100vh",padding:"24px 16px"}}>
+        <div style={{maxWidth:720,margin:"0 auto"}}>
+          <Header tittel={selected.navn} sub={`${gruppe.ikon} ${selected.posisjon}${selected.alder>0?` · ${selected.alder} år`:""}`} tilbake={()=>{setView("overview");setSelected(null);}}/>
+
+          {/* To knapper */}
+          <div style={{display:"flex",gap:10,marginBottom:16}}>
+            <button onClick={()=>{
+              setSamtaleForm({type:"Spillersamtale",dato:"",spillfaser:[],notat:"",mal:[{id:uid(),tittel:"",kortbeskrivelse:"",prioritet:"Høy",kategori:"fotball",spillfase:"",detaljerMal:"",tiltak:"",maling:""}]});
+              setConvTab("manuell");setConvResult(null);setConvFeil("");setAnalyseTekst("");
+              setView("new-conv");
+            }} style={{flex:1,padding:"12px",borderRadius:10,border:"none",background:C.navy,color:C.white,fontSize:13,cursor:"pointer",fontWeight:"bold",boxShadow:"0 4px 14px rgba(11,34,101,0.15)"}}>📝 Manuell registrering</button>
+            <button onClick={()=>{setConvTab("ai");setConvResult(null);setConvFeil("");setAnalyseTekst("");setView("new-conv");}} style={{flex:1,padding:"12px",borderRadius:10,border:`2px solid ${C.navy}`,background:C.white,color:C.navy,fontSize:13,cursor:"pointer",fontWeight:"bold"}}>🤖 AI-analyse av samtale</button>
+          </div>
+
+          {/* Nåværende mål */}
+          {sisteMedMal&&<NåværendeMål samtale={sisteMedMal} gruppe={gruppe}/>}
+
+          {/* Samtalestatistikk */}
+          {convs.length>0&&<div style={{marginBottom:18}}>
+            <div style={{fontSize:10,color:C.gold,letterSpacing:2,textTransform:"uppercase",marginBottom:8}}>Samtalestatistikk</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
+              {SAMTALE_TYPER.map(t=>{
+                const ant=convs.filter(c=>(c.type||"Spillersamtale")===t.id).length;
+                return<div key={t.id} style={{background:C.white,borderRadius:10,padding:"10px 8px",textAlign:"center",boxShadow:"0 2px 8px rgba(11,34,101,0.06)",borderTop:`3px solid ${ant>0?t.farge:C.greyLight}`,opacity:ant===0?0.4:1}}>
+                  <div style={{fontSize:16,marginBottom:2}}>{t.ikon}</div>
+                  <div style={{fontSize:18,fontWeight:"bold",color:ant>0?C.navy:C.grey}}>{ant}</div>
+                  <div style={{fontSize:9,color:C.grey,letterSpacing:1,textTransform:"uppercase",lineHeight:1.4}}>{t.id.replace("samtale","").replace("gjennomgang","g.gang")}</div>
+                </div>;
+              })}
+            </div>
+          </div>}
+
+          {/* Samtalehistorikk */}
+          <div style={{fontSize:10,color:C.gold,letterSpacing:2,textTransform:"uppercase",marginBottom:8}}>Samtalehistorikk · {convs.length} samtale{convs.length!==1?"r":""}</div>
+          {convs.length===0
+            ?<div style={{background:C.white,borderRadius:14,padding:"36px 24px",textAlign:"center",boxShadow:"0 2px 14px rgba(11,34,101,0.06)"}}><div style={{fontSize:28,marginBottom:8}}>💬</div><div style={{fontSize:14,fontWeight:"bold",color:C.text,marginBottom:5}}>Ingen samtaler ennå</div><div style={{fontSize:12,color:C.grey}}>Bruk knappene over for å registrere første samtale.</div></div>
+            :<div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {[...convs].reverse().map((c,i)=>(
+                <div key={c.id} style={{background:C.white,borderRadius:12,boxShadow:"0 2px 10px rgba(11,34,101,0.06)",overflow:"hidden"}}>
+                  <div style={{display:"flex",alignItems:"center",borderLeft:expandedConv===c.id?`4px solid ${C.gold}`:`4px solid ${gruppe.farge}`,transition:"all 0.2s"}}>
+                    <div onClick={()=>setExpandedConv(expandedConv===c.id?null:c.id)} style={{flex:1,padding:"13px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
+                      <div style={{width:30,height:30,borderRadius:"50%",background:expandedConv===c.id?C.navy:C.offWhite,color:expandedConv===c.id?C.gold:C.navy,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:"bold",border:`2px solid ${expandedConv===c.id?C.gold:C.greyLight}`,flexShrink:0}}>{convs.length-i}</div>
+                      <div style={{flex:1}}>
+                        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3,flexWrap:"wrap"}}>
+                          <span style={{fontSize:13,fontWeight:"bold",color:C.text}}>Samtale {convs.length-i}</span>
+                          <TypeBadge type={c.type||"Spillersamtale"} liten/>
+                        </div>
+                        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                          <span style={{fontSize:11,color:C.grey}}>📅 {c.dato}</span>
+                          {[...new Set((c.mal||[]).map(m=>m.spillfase).filter(Boolean))].map((sf,si)=><span key={si} style={{fontSize:11,color:C.grey}}>📍 {sf}</span>)}
+                          <span style={{fontSize:11,color:C.grey}}>{(c.mal||[]).length} mål</span>
+                          {c.notat&&<span style={{fontSize:11,color:C.gold}}>📋</span>}
+                        </div>
+                      </div>
+                      <div style={{fontSize:16,color:C.gold,opacity:expandedConv===c.id?1:0.4,transform:expandedConv===c.id?"rotate(90deg)":"rotate(0deg)",transition:"transform 0.2s"}}>›</div>
+                    </div>
+                    <button onClick={e=>{e.stopPropagation();setEditingConv(c);setView("edit-conv");}} title="Rediger" style={{padding:"13px 12px",border:"none",background:"transparent",cursor:"pointer",color:C.grey,fontSize:15,flexShrink:0,borderLeft:`1px solid ${C.greyLight}`}}>✏️</button>
+                    <button onClick={e=>{e.stopPropagation();slettConv(c.id);}} title="Slett" style={{padding:"13px 10px",border:"none",background:"transparent",cursor:"pointer",color:"#ffaaaa",fontSize:13,flexShrink:0}}>🗑</button>
+                  </div>
+                  {expandedConv===c.id&&<div style={{borderTop:`1px solid ${C.greyLight}`,padding:"14px 16px",background:C.offWhite}}>
+                    {c.notat&&<div style={{background:"rgba(201,168,76,0.07)",borderRadius:9,padding:"9px 12px",marginBottom:10,borderLeft:`3px solid ${C.gold}`}}><div style={{fontSize:9,color:C.gold,letterSpacing:2,textTransform:"uppercase",marginBottom:3}}>📋 Notat</div><p style={{margin:0,fontSize:12,color:C.text,lineHeight:1.75,fontStyle:"italic"}}>{c.notat}</p></div>}
+                    {(c.mal||[]).length>0?<NåværendeMål samtale={c} gruppe={gruppe}/>:<div style={{fontSize:12,color:C.grey,fontStyle:"italic"}}>Ingen utviklingsmål i denne samtalen.</div>}
+                  </div>}
+                </div>
+              ))}
+            </div>
+          }
+          <div style={{display:"flex",justifyContent:"flex-end",marginTop:12}}>
+            <button onClick={()=>slettSpiller(selected.id)} style={{padding:"7px 14px",borderRadius:8,border:"1px solid #ffaaaa",background:"transparent",color:"#c0392b",fontSize:11,cursor:"pointer"}}>Slett spiller</button>
+          </div>
+          <div style={{textAlign:"center",marginTop:12,fontSize:10,color:C.greyLight,letterSpacing:1}}>STABÆK FOTBALL · G17 · KONFIDENSIELT</div>
+        </div>
+      </div>
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════════════════
+  // VIEW: NY SAMTALE
+  // ════════════════════════════════════════════════════════════════════════
+  if(view==="new-conv"&&selected){
+    const gruppe=gruppeForPos(selected.posisjon);
+    return(
+      <div style={{fontFamily:"Georgia,serif",background:C.offWhite,minHeight:"100vh",padding:"24px 16px"}}>
+        <div style={{maxWidth:660,margin:"0 auto"}}>
+          <button onClick={()=>setView("player")} style={{display:"flex",alignItems:"center",gap:8,marginBottom:14,padding:"10px 18px",borderRadius:10,border:`1px solid ${C.greyLight}`,background:C.white,color:C.navy,fontSize:14,cursor:"pointer",fontWeight:"bold",boxShadow:"0 2px 8px rgba(11,34,101,0.07)"}}>
+            <span style={{fontSize:18}}>←</span> Tilbake til {selected.navn}
+          </button>
+          <div style={{background:`linear-gradient(135deg,${C.navy},#0d2a6e 60%,${C.blue})`,borderRadius:16,padding:"18px 22px",marginBottom:14,boxShadow:"0 4px 20px rgba(11,34,101,0.2)"}}>
+            <div style={{fontSize:9,letterSpacing:3,color:C.gold,textTransform:"uppercase",marginBottom:3}}>Ny samtale</div>
+            <div style={{fontSize:18,fontWeight:"bold",color:C.white}}>{selected.navn}</div>
+            <div style={{fontSize:12,color:"rgba(200,208,220,0.8)",marginTop:2}}>{gruppe.ikon} {selected.posisjon}</div>
+          </div>
+
+          {/* Tab-valg */}
+          <div style={{display:"flex",background:C.white,borderRadius:12,padding:4,gap:3,marginBottom:14,boxShadow:"0 2px 10px rgba(11,34,101,0.07)"}}>
+            {[{id:"manuell",l:"📝 Manuell"},{id:"ai",l:"🤖 AI-analyse"}].map(t=><button key={t.id} onClick={()=>setConvTab(t.id)} style={{flex:1,padding:"10px",borderRadius:9,border:"none",cursor:"pointer",background:convTab===t.id?C.navy:"transparent",color:convTab===t.id?C.white:C.grey,fontSize:13,fontWeight:convTab===t.id?"bold":"normal",transition:"all 0.2s"}}>{t.l}</button>)}
+          </div>
+
+          {/* MANUELL FANE */}
+          {convTab==="manuell"&&samtaleForm&&(
+            <div>
+              <div style={{background:C.white,borderRadius:14,padding:20,boxShadow:"0 2px 14px rgba(11,34,101,0.07)",marginBottom:12}}>
+                <div style={{fontSize:11,color:C.gold,letterSpacing:2,textTransform:"uppercase",marginBottom:12}}>Samtaleinfo</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+                  <div>
+                    <div style={{fontSize:10,color:C.grey,marginBottom:4,letterSpacing:1,textTransform:"uppercase"}}>Type samtale</div>
+                    <select value={samtaleForm.type} onChange={e=>setSamtaleForm(p=>({...p,type:e.target.value}))} style={{width:"100%",padding:"8px 10px",border:`1px solid ${C.greyLight}`,borderRadius:8,fontSize:13,color:C.text,background:C.offWhite,outline:"none"}}>
+                      {SAMTALE_TYPER.map(t=><option key={t.id} value={t.id}>{t.ikon} {t.id}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <div style={{fontSize:10,color:C.grey,marginBottom:4,letterSpacing:1,textTransform:"uppercase"}}>Dato</div>
+                    <input type="date" value={samtaleForm.dato} onChange={e=>setSamtaleForm(p=>({...p,dato:e.target.value}))} style={{width:"100%",padding:"8px 10px",border:`1px solid ${C.greyLight}`,borderRadius:8,fontSize:13,color:C.text,background:C.offWhite,outline:"none",boxSizing:"border-box"}}/>
+                  </div>
+                </div>
+                <div>
+                  <div style={{fontSize:10,color:C.grey,marginBottom:4,letterSpacing:1,textTransform:"uppercase"}}>Notat (valgfritt)</div>
+                  <textarea value={samtaleForm.notat} onChange={e=>setSamtaleForm(p=>({...p,notat:e.target.value}))} placeholder="Hva handlet samtalen om?" rows={3} style={{width:"100%",padding:"8px 10px",border:`1px solid ${C.greyLight}`,borderRadius:8,fontSize:13,color:C.text,background:C.offWhite,outline:"none",resize:"vertical",boxSizing:"border-box"}}/>
+                </div>
+              </div>
+
+              <div style={{fontSize:11,color:C.gold,letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>Utviklingsmål</div>
+              {(samtaleForm.mal||[]).map((m,idx)=>(
+                <MalSkjema key={m.id||idx} mal={m} idx={idx}
+                  onChange={(k,v)=>setSamtaleForm(p=>({...p,mal:p.mal.map((x,i)=>i===idx?{...x,[k]:v}:x)}))}
+                  onSlett={()=>setSamtaleForm(p=>({...p,mal:p.mal.filter((_,i)=>i!==idx)}))}/>
+              ))}
+              <button onClick={()=>setSamtaleForm(p=>({...p,mal:[...p.mal,{id:uid(),tittel:"",kortbeskrivelse:"",prioritet:"Høy",kategori:"fotball",spillfase:"",detaljerMal:"",tiltak:"",maling:""}]}))} style={{width:"100%",padding:"10px",borderRadius:10,border:`2px dashed ${C.greyLight}`,background:"transparent",color:C.grey,fontSize:13,cursor:"pointer",marginBottom:12}}>
+                + Legg til mål
+              </button>
+              <button onClick={lagreManuell} style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:C.gold,color:C.navy,fontSize:15,cursor:"pointer",fontWeight:"bold",boxShadow:"0 4px 16px rgba(201,168,76,0.3)"}}>✅ Lagre samtale</button>
+            </div>
+          )}
+
+          {/* AI FANE */}
+          {convTab==="ai"&&(
+            <div>
+              <div style={{background:C.white,borderRadius:14,padding:20,boxShadow:"0 2px 14px rgba(11,34,101,0.07)",marginBottom:12}}>
+                <div style={{fontSize:11,color:C.gold,letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>Lim inn transkripsjon fra samtalen</div>
+                <textarea value={analyseTekst} onChange={e=>setAnalyseTekst(e.target.value)} placeholder="Lim inn transkribert samtale her – bruk MacWhisper eller skriv det ned..." rows={8} style={{width:"100%",padding:"10px 12px",border:`1px solid ${C.greyLight}`,borderRadius:10,fontSize:13,color:C.text,lineHeight:1.7,resize:"vertical",boxSizing:"border-box",outline:"none",background:C.offWhite}}/>
+                {!apiKey&&<div style={{marginTop:8,padding:"8px 12px",background:"rgba(231,76,60,0.08)",border:"1px solid rgba(231,76,60,0.3)",borderRadius:8,fontSize:12,color:"#c0392b"}}>⚠️ Ingen API-nøkkel. Klikk ⚙️ i headeren og legg inn Groq-nøkkel (gratis på console.groq.com).</div>}
+                {convFeil&&<div style={{marginTop:8,padding:"8px 12px",background:"#fff0f0",border:"1px solid #ffaaaa",borderRadius:8,fontSize:12,color:"#c0392b"}}>⚠️ {convFeil}</div>}
+                <button onClick={analyser} disabled={analyzing||!analyseTekst.trim()} style={{marginTop:10,width:"100%",padding:"12px",borderRadius:9,border:"none",background:(analyzing||!analyseTekst.trim())?C.greyLight:C.navy,color:(analyzing||!analyseTekst.trim())?C.grey:C.white,fontSize:13,cursor:(analyzing||!analyseTekst.trim())?"default":"pointer",fontWeight:"bold"}}>
+                  {analyzing?"Analyserer...":"🤖 Analyser samtale"}
+                </button>
+              </div>
+
+              {convResult&&<div>
+                <div style={{background:C.white,borderRadius:"12px 12px 0 0",padding:"14px 18px"}}>
+                  <div style={{fontSize:10,color:C.gold,letterSpacing:2,textTransform:"uppercase",marginBottom:4}}>Generert spillerkort</div>
+                  <div style={{fontSize:16,fontWeight:"bold",color:C.text}}>{selected.navn}</div>
+                </div>
+                <div style={{background:C.navy,padding:"9px 16px",borderTop:"1px solid rgba(201,168,76,0.2)"}}><span style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:C.gold,borderBottom:`2px solid ${C.gold}`,paddingBottom:3}}>Utviklingsmål</span></div>
+                <div style={{background:C.white,marginBottom:12}}>
+                  {(convResult.mal||[]).map((m,i)=>(
+                    <div key={i} style={{padding:"12px 16px",borderBottom:i<(convResult.mal||[]).length-1?`1px solid ${C.greyLight}`:"none",display:"flex",alignItems:"flex-start",gap:10}}>
+                      <span style={{fontSize:16}}>{m.ikon||"🎯"}</span>
+                      <div><div style={{display:"flex",gap:6,alignItems:"center",marginBottom:3,flexWrap:"wrap"}}><span style={{fontSize:13,fontWeight:"bold",color:C.text}}>{m.tittel}</span><PrioritetBadge p={m.prioritet}/></div>
+                        {m.spillfase&&<div style={{fontSize:11,color:C.blue,marginBottom:3}}>📍 {m.spillfase}</div>}
+                        <p style={{margin:0,fontSize:12,color:C.grey}}>{m.kortbeskrivelse}</p></div>
+                    </div>
+                  ))}
+                </div>
+                {convResult.drommeMal&&<div style={{background:C.navy,borderRadius:10,padding:"14px 16px",marginBottom:12,textAlign:"center"}}><div style={{fontSize:9,color:C.gold,letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>⭐ Drømmemål</div><p style={{margin:0,fontSize:13,fontStyle:"italic",color:C.cream,lineHeight:1.8}}>{convResult.drommeMal}</p></div>}
+                <div style={{display:"flex",gap:10}}>
+                  <button onClick={()=>{setConvResult(null);setAnalyseTekst("");}} style={{padding:"10px 16px",borderRadius:8,border:`1px solid ${C.greyLight}`,background:C.offWhite,color:C.grey,fontSize:12,cursor:"pointer"}}>← Prøv igjen</button>
+                  <button onClick={lagreAnalysert} style={{flex:1,padding:"10px",borderRadius:8,border:"none",background:C.gold,color:C.navy,fontSize:13,cursor:"pointer",fontWeight:"bold"}}>✅ Lagre til spillerprofil</button>
+                </div>
+              </div>}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════════════════
+  // VIEW: REDIGER SAMTALE
+  // ════════════════════════════════════════════════════════════════════════
+  if(view==="edit-conv"&&selected&&editingConv){
+    const gruppe=gruppeForPos(selected.posisjon);
+    const[ef,setEf]=useState(()=>({
+      type:editingConv.type||"Spillersamtale",
+      dato:editingConv.dato||"",
+      notat:editingConv.notat||"",
+      drommeMal:editingConv.drommeMal||"",
+      mal:(editingConv.mal||[]).map(m=>({...m,detaljerMal:m.detaljer?.mal||"",tiltak:(m.detaljer?.tiltak||[]).join("\n"),maling:(m.detaljer?.maling||[]).join("\n")}))
+    }));
+    function lagreEdit(){
+      const op=convs.map(c=>c.id===editingConv.id?{...c,type:ef.type,dato:ef.dato||c.dato,notat:ef.notat,drommeMal:ef.drommeMal,
+        mal:ef.mal.filter(m=>m.tittel.trim()).map(m=>({...m,detaljer:{mal:m.detaljerMal||m.kortbeskrivelse,tiltak:m.tiltak?m.tiltak.split("\n").filter(Boolean):[],maling:m.maling?m.maling.split("\n").filter(Boolean):[]}}))}:c);
+      LS.saveConvs(selected.id,op);setConvs(op);
+      setView("player");setEditingConv(null);
+    }
+    return(
+      <div style={{fontFamily:"Georgia,serif",background:C.offWhite,minHeight:"100vh",padding:"24px 16px"}}>
+        <div style={{maxWidth:660,margin:"0 auto"}}>
+          <button onClick={()=>{setView("player");setEditingConv(null);}} style={{display:"flex",alignItems:"center",gap:8,marginBottom:14,padding:"10px 18px",borderRadius:10,border:`1px solid ${C.greyLight}`,background:C.white,color:C.navy,fontSize:14,cursor:"pointer",fontWeight:"bold",boxShadow:"0 2px 8px rgba(11,34,101,0.07)"}}>
+            <span style={{fontSize:18}}>←</span> Avbryt redigering
+          </button>
+          <div style={{background:`linear-gradient(135deg,${C.navy},#0d2a6e 60%,${C.blue})`,borderRadius:16,padding:"18px 22px",marginBottom:14,boxShadow:"0 4px 20px rgba(11,34,101,0.2)"}}>
+            <div style={{fontSize:9,letterSpacing:3,color:C.gold,textTransform:"uppercase",marginBottom:3}}>✏️ Rediger samtale</div>
+            <div style={{fontSize:18,fontWeight:"bold",color:C.white}}>{selected.navn} · {editingConv.dato}</div>
+          </div>
+          <div style={{background:C.white,borderRadius:14,padding:20,boxShadow:"0 2px 14px rgba(11,34,101,0.07)",marginBottom:12}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+              <div><div style={{fontSize:10,color:C.grey,marginBottom:4,letterSpacing:1,textTransform:"uppercase"}}>Type samtale</div>
+                <select value={ef.type} onChange={e=>setEf(p=>({...p,type:e.target.value}))} style={{width:"100%",padding:"8px 10px",border:`1px solid ${C.greyLight}`,borderRadius:8,fontSize:13,color:C.text,background:C.offWhite,outline:"none"}}>
+                  {SAMTALE_TYPER.map(t=><option key={t.id} value={t.id}>{t.ikon} {t.id}</option>)}
+                </select></div>
+              <div><div style={{fontSize:10,color:C.grey,marginBottom:4,letterSpacing:1,textTransform:"uppercase"}}>Drømmemål</div>
+                <input value={ef.drommeMal} onChange={e=>setEf(p=>({...p,drommeMal:e.target.value}))} placeholder="Spillerens drømmemål..." style={{width:"100%",padding:"8px 10px",border:`1px solid ${C.greyLight}`,borderRadius:8,fontSize:13,color:C.text,background:C.offWhite,outline:"none",boxSizing:"border-box"}}/></div>
+            </div>
+            <div><div style={{fontSize:10,color:C.grey,marginBottom:4,letterSpacing:1,textTransform:"uppercase"}}>Notat</div>
+              <textarea value={ef.notat} onChange={e=>setEf(p=>({...p,notat:e.target.value}))} rows={3} style={{width:"100%",padding:"8px 10px",border:`1px solid ${C.greyLight}`,borderRadius:8,fontSize:13,color:C.text,background:C.offWhite,outline:"none",resize:"vertical",boxSizing:"border-box"}}/></div>
+          </div>
+          <div style={{fontSize:11,color:C.gold,letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>Utviklingsmål</div>
+          {ef.mal.map((m,idx)=>(
+            <MalSkjema key={idx} mal={m} idx={idx}
+              onChange={(k,v)=>setEf(p=>({...p,mal:p.mal.map((x,i)=>i===idx?{...x,[k]:v}:x)}))}
+              onSlett={()=>setEf(p=>({...p,mal:p.mal.filter((_,i)=>i!==idx)}))}/>
+          ))}
+          <button onClick={()=>setEf(p=>({...p,mal:[...p.mal,{id:uid(),tittel:"",kortbeskrivelse:"",prioritet:"Høy",kategori:"fotball",spillfase:"",detaljerMal:"",tiltak:"",maling:""}]}))} style={{width:"100%",padding:"10px",borderRadius:10,border:`2px dashed ${C.greyLight}`,background:"transparent",color:C.grey,fontSize:13,cursor:"pointer",marginBottom:12}}>+ Legg til mål</button>
+          <button onClick={lagreEdit} style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:C.gold,color:C.navy,fontSize:15,cursor:"pointer",fontWeight:"bold",boxShadow:"0 4px 16px rgba(201,168,76,0.3)"}}>✅ Lagre endringer</button>
+          <div style={{textAlign:"center",marginTop:12,fontSize:10,color:C.greyLight}}>STABÆK FOTBALL · G17 · KONFIDENSIELT</div>
+        </div>
+      </div>
+    );
+  }
+
+  return<div style={{padding:40,textAlign:"center",color:C.grey}}>Laster...</div>;
+}
+
+ReactDOM.render(<App/>, document.getElementById('root'));
+</script>
+</body>
+</html>
