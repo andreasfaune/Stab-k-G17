@@ -1,0 +1,1785 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Stabæk G17 – Spillerutvikling</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Georgia,serif;background:#F2F4F8;min-height:100vh;color:#0B1F3A}
+button,input,select,textarea{font-family:inherit}
+.page{padding:24px 16px}.wrap{max-width:740px;margin:0 auto}.wrap-sm{max-width:640px;margin:0 auto}
+.hdr{background:linear-gradient(135deg,#0B2265,#0d2a6e 60%,#1A4B8C);border-radius:16px;padding:20px 24px;margin-bottom:16px;box-shadow:0 4px 32px rgba(11,34,101,.22);position:relative;overflow:hidden}
+.hdr::after{content:'';position:absolute;right:-40px;top:-40px;width:180px;height:180px;background:radial-gradient(circle,rgba(201,168,76,.18),transparent 70%);pointer-events:none}
+.hdr-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.hdr-left{display:flex;align-items:center;gap:12px}
+.logo-box{width:48px;height:48px;border-radius:10px;cursor:pointer;border:2px dashed #C9A84C;background:rgba(201,168,76,.08);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;color:#C9A84C;font-size:8px;text-align:center;line-height:1.3}
+.hdr-lbl{font-size:9px;letter-spacing:3px;color:#C9A84C;text-transform:uppercase;margin-bottom:2px}
+.hdr-title{font-size:18px;font-weight:bold;color:#fff}
+.hdr-sub{font-size:11px;color:rgba(200,208,220,.8);margin-top:2px}
+.hdr-btns{display:flex;gap:8px}
+.btn-hdr{padding:7px 14px;border-radius:8px;border:1px solid rgba(201,168,76,.4);background:rgba(201,168,76,.1);color:#C9A84C;font-size:12px;cursor:pointer;font-weight:bold}
+.btn-icon{padding:7px 11px;border-radius:8px;border:1px solid rgba(201,168,76,.3);background:rgba(255,255,255,.08);color:#C8D0DC;font-size:14px;cursor:pointer}
+.settings{margin-top:14px;padding-top:12px;border-top:1px solid rgba(201,168,76,.2)}
+.settings-lbl{font-size:10px;color:#C9A84C;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
+.settings-row{display:flex;gap:8px;margin-bottom:6px}
+.settings-row input{flex:1;padding:8px 12px;border:1px solid rgba(201,168,76,.3);border-radius:8px;background:rgba(255,255,255,.08);color:#fff;font-size:12px;outline:none}
+.btn-gold{padding:8px 14px;border-radius:8px;border:none;background:#C9A84C;color:#0B2265;font-size:12px;cursor:pointer;font-weight:bold;white-space:nowrap}
+.settings-hint{font-size:10px;color:#7A8FA8;margin-bottom:8px}
+.settings-info{padding:8px 12px;border-radius:8px;font-size:11px;background:rgba(39,174,96,.08);border:1px solid rgba(39,174,96,.25);color:#1e7e34}
+.btn-close-settings{margin-top:12px;width:100%;padding:8px;border-radius:8px;border:none;background:rgba(255,255,255,.08);color:#C8D0DC;font-size:12px;cursor:pointer}
+.card{background:#fff;border-radius:14px;padding:20px;box-shadow:0 2px 16px rgba(11,34,101,.07);margin-bottom:12px}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.stat-card{background:#fff;border-radius:12px;padding:13px 10px;text-align:center;cursor:pointer;transition:all .2s;border-top:3px solid #ccc;box-shadow:0 2px 10px rgba(11,34,101,.06)}
+.stat-card.active{background:#0B2265;transform:translateY(-2px);box-shadow:0 4px 20px rgba(11,34,101,.22)}
+.stat-ikon{font-size:18px;margin-bottom:3px}
+.stat-tall{font-size:22px;font-weight:bold;color:#0B2265}
+.stat-card.active .stat-tall{color:#C9A84C}
+.stat-lbl{font-size:9px;color:#7A8FA8;letter-spacing:1px;text-transform:uppercase;line-height:1.4}
+.stat-card.active .stat-lbl{color:#C8D0DC}
+.stat-active-lbl{font-size:8px;color:rgba(255,255,255,.4);letter-spacing:1px;margin-top:4px}
+.filter-bar{display:flex;align-items:center;gap:10px;padding:9px 13px;background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(11,34,101,.07);border:1px solid #C8D0DC;margin-bottom:14px}
+.btn-clear{padding:4px 10px;border-radius:8px;border:1px solid #C8D0DC;background:transparent;color:#7A8FA8;font-size:11px;cursor:pointer}
+.topbar{display:flex;gap:10px;margin-bottom:14px;align-items:center;flex-wrap:wrap}
+.søk-wrap{margin-bottom:12px}
+.søk-inp{width:100%;padding:10px 14px;border:1px solid #C8D0DC;border-radius:10px;font-size:13px;color:#0B1F3A;background:#fff;outline:none;box-sizing:border-box}
+.btn-primary{padding:9px 18px;border-radius:10px;border:none;background:#0B2265;color:#fff;font-size:13px;cursor:pointer;font-weight:bold}
+.btn-outline{padding:9px 18px;border-radius:10px;border:2px solid #0B2265;background:#fff;color:#0B2265;font-size:13px;cursor:pointer;font-weight:bold}
+.add-form{background:#fff;border-radius:14px;padding:20px;margin-bottom:14px;box-shadow:0 4px 20px rgba(11,34,101,.1);border:1px solid #C8D0DC}
+.form-2col{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.form-3col{display:grid;grid-template-columns:2fr 80px 1fr;gap:10px;margin-bottom:12px}
+.form-group label{display:block;font-size:10px;color:#7A8FA8;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+.form-group input,.form-group select{width:100%;padding:9px 12px;border:1px solid #C8D0DC;border-radius:8px;font-size:13px;color:#0B1F3A;background:#F2F4F8;outline:none}
+.form-btns{display:flex;gap:10px}
+.btn-sec{padding:9px 16px;border-radius:8px;border:1px solid #C8D0DC;background:#F2F4F8;color:#7A8FA8;font-size:12px;cursor:pointer}
+.btn-save{flex:1;padding:9px;border-radius:8px;border:none;background:#0B2265;color:#fff;font-size:13px;cursor:pointer;font-weight:bold}
+.empty{background:#fff;border-radius:14px;padding:52px 24px;text-align:center;box-shadow:0 2px 14px rgba(11,34,101,.06)}
+.empty-ikon{font-size:44px;margin-bottom:14px}
+.empty h3{font-size:17px;font-weight:bold;color:#0B1F3A;margin-bottom:8px}
+.empty p{font-size:13px;color:#7A8FA8}
+.group-hdr{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.group-circle{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.group-label{font-size:15px;font-weight:bold;color:#0B1F3A}
+.group-count{font-size:12px;color:#7A8FA8}
+.group-line{height:1px;flex:1;background:#C8D0DC}
+.p-card{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(11,34,101,.07);cursor:pointer;transition:all .18s;margin-bottom:8px;border-left:4px solid #ccc}
+.p-card-inner{display:flex;align-items:center;gap:12px;padding:13px 16px;flex-wrap:wrap}
+.p-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:bold;color:#C9A84C;flex-shrink:0;background:linear-gradient(135deg,#0B2265,#1A4B8C)}
+.p-info{min-width:140px;flex-shrink:0}
+.p-name{font-weight:bold;font-size:14px;margin-bottom:2px}
+.p-pos{font-size:11px;color:#7A8FA8}
+.p-mal{flex:1;min-width:120px;font-size:12px;color:#0B1F3A;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.p-mal.none{font-style:italic;color:#C8D0DC}
+.p-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.p-count{text-align:center;min-width:32px}
+.p-count-n{font-size:17px;font-weight:bold}
+.p-count-l{font-size:9px;color:#7A8FA8;letter-spacing:1px}
+.status-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:20px;font-size:10px;white-space:nowrap;min-width:90px}
+.status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.chevron{font-size:15px;color:#C9A84C;opacity:.4}
+.profile-hdr{background:linear-gradient(135deg,#0B2265,#0d2a6e 60%,#1A4B8C);border-radius:16px;padding:20px 24px;margin-bottom:14px;box-shadow:0 4px 24px rgba(11,34,101,.2);position:relative;overflow:hidden}
+.profile-hdr::after{content:'';position:absolute;right:-40px;top:-40px;width:200px;height:200px;background:radial-gradient(circle,rgba(201,168,76,.15),transparent 70%);pointer-events:none}
+.profile-hdr-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.p-big-av{width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#C9A84C,#E8C96A);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:bold;color:#0B2265;flex-shrink:0}
+.p-stats-row{display:flex;gap:16px}
+.p-stat{text-align:center}
+.p-stat-n{font-size:20px;font-weight:bold;color:#C9A84C}
+.p-stat-l{font-size:9px;color:#7A8FA8;letter-spacing:1px;text-transform:uppercase}
+.two-btns{display:flex;gap:10px;margin-bottom:14px}
+.two-btns button{flex:1;padding:12px;border-radius:10px;font-size:13px;cursor:pointer;font-weight:bold}
+.kat-tabs{display:flex;background:#fff;border-radius:12px;padding:4px;gap:3px;margin-bottom:12px;box-shadow:0 2px 10px rgba(11,34,101,.07)}
+.kat-tab{flex:1;padding:8px 4px;border-radius:9px;border:none;cursor:pointer;background:transparent;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:2px}
+.kat-tab.active{color:#fff}
+.kat-tab-ikon{font-size:15px}
+.kat-tab-lbl{font-size:10px;color:#7A8FA8}
+.kat-tab.active .kat-tab-lbl{font-weight:bold;color:#fff}
+.kat-tab-ant{font-size:9px;color:#7A8FA8}
+.goal-card{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(11,34,101,.08);overflow:hidden;cursor:pointer;margin-bottom:8px;border-left:4px solid #ccc;transition:all .2s}
+.goal-hdr{display:flex;align-items:flex-start;gap:10px;padding:12px 14px}
+.goal-ikon{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;border:2px solid #C8D0DC;flex-shrink:0;background:#F2F4F8;color:#0B2265;transition:all .2s;margin-top:2px}
+.goal-ikon.open{background:#0B2265;color:#C9A84C;border-color:#C9A84C}
+.goal-text{flex:1}
+.goal-badges{display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap}
+.pri-badge{font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:2px 9px;border-radius:20px}
+.spf-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:11px}
+.goal-focus{font-size:13px;font-weight:bold;color:#0B1F3A;margin-bottom:2px;line-height:1.4}
+.goal-label{font-size:11px;color:#7A8FA8;font-style:italic}
+.goal-chevron{font-size:16px;color:#C9A84C;opacity:.35;transition:transform .22s;flex-shrink:0;margin-top:4px}
+.goal-chevron.open{opacity:1;transform:rotate(90deg)}
+.goal-detail{border-top:1px solid #C8D0DC}
+.detail-tabs{display:flex;background:#F2F4F8;border-bottom:1px solid #C8D0DC}
+.detail-tab{flex:1;padding:9px 4px;border:none;border-bottom:3px solid transparent;background:transparent;color:#7A8FA8;font-size:11px;cursor:pointer;font-family:inherit}
+.detail-tab.active{color:#0B2265;font-weight:bold;border-bottom-color:#C9A84C}
+.detail-body{padding:14px 16px;background:#fff}
+.detail-body p{font-size:13px;color:#0B1F3A;line-height:1.85}
+.detail-item{display:flex;gap:10px;align-items:flex-start;padding:9px 12px;background:#F2F4F8;border-radius:9px;margin-bottom:8px}
+.detail-num{min-width:22px;height:22px;border-radius:50%;background:#0B2265;color:#C9A84C;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;flex-shrink:0}
+.detail-item p{margin:0;font-size:13px;color:#0B1F3A;line-height:1.7}
+.detail-item.maling{border-left:3px solid #C9A84C}
+.detail-empty{font-size:12px;color:#7A8FA8;font-style:italic;padding:4px 0}
+.dream{background:#0B2265;border-radius:10px;padding:13px 16px;display:flex;align-items:flex-start;gap:10px;margin-top:10px}
+.dream p{margin:0;font-size:12px;font-style:italic;color:#F8F5EE;line-height:1.8}
+.dream-lbl{font-size:9px;color:#C9A84C;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px}
+.notat-box{background:rgba(201,168,76,.07);border-radius:9px;padding:9px 12px;margin-bottom:10px;border-left:3px solid #C9A84C}
+.notat-lbl{font-size:9px;color:#C9A84C;letter-spacing:2px;text-transform:uppercase;margin-bottom:3px}
+.notat-box p{margin:0;font-size:12px;color:#0B1F3A;line-height:1.75;font-style:italic}
+.conv-stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.conv-stat{background:#fff;border-radius:10px;padding:10px 8px;text-align:center;box-shadow:0 2px 8px rgba(11,34,101,.06);border-top:3px solid #C8D0DC}
+.conv-stat.has{border-top-color:var(--farge)}
+.conv-stat-ikon{font-size:16px;margin-bottom:2px}
+.conv-stat-n{font-size:17px;font-weight:bold;color:#7A8FA8}
+.conv-stat.has .conv-stat-n{color:#0B2265}
+.conv-stat-l{font-size:9px;color:#7A8FA8;letter-spacing:1px;text-transform:uppercase;line-height:1.4}
+.section-lbl{font-size:10px;color:#C9A84C;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px}
+.conv-row{background:#fff;border-radius:12px;box-shadow:0 2px 10px rgba(11,34,101,.06);overflow:hidden;margin-bottom:10px}
+.conv-hdr-row{display:flex;align-items:center;border-left:4px solid #1A4B8C}
+.conv-hdr-row.open{border-left-color:#C9A84C}
+.conv-clickable{flex:1;padding:13px 16px;cursor:pointer;display:flex;align-items:center;gap:10px}
+.conv-num{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;border:2px solid #C8D0DC;background:#F2F4F8;color:#0B2265;flex-shrink:0}
+.conv-num.open{background:#0B2265;color:#C9A84C;border-color:#C9A84C}
+.conv-meta{flex:1}
+.conv-title-row{display:flex;align-items:center;gap:7px;margin-bottom:3px;flex-wrap:wrap}
+.conv-title{font-size:13px;font-weight:bold;color:#0B1F3A}
+.type-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:10px;white-space:nowrap}
+.conv-detail-row{display:flex;gap:8px;flex-wrap:wrap}
+.conv-detail-row span{font-size:11px;color:#7A8FA8}
+.conv-chevron{font-size:16px;color:#C9A84C;opacity:.4;transition:transform .2s}
+.conv-chevron.open{opacity:1;transform:rotate(90deg)}
+.conv-edit-btn{padding:13px 11px;border:none;background:transparent;cursor:pointer;color:#7A8FA8;font-size:14px;border-left:1px solid #C8D0DC}
+.conv-del-btn{padding:13px 9px;border:none;background:transparent;cursor:pointer;color:#ffaaaa;font-size:13px}
+.conv-body{border-top:1px solid #C8D0DC;padding:14px 16px;background:#F2F4F8}
+.form-lbl{font-size:10px;color:#7A8FA8;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+.form-input{width:100%;padding:8px 10px;border:1px solid #C8D0DC;border-radius:8px;font-size:13px;color:#0B1F3A;background:#F2F4F8;outline:none;box-sizing:border-box}
+.form-textarea{width:100%;padding:8px 10px;border:1px solid #C8D0DC;border-radius:8px;font-size:13px;color:#0B1F3A;background:#F2F4F8;outline:none;resize:vertical;box-sizing:border-box;font-family:inherit}
+.form-select{width:100%;padding:8px 10px;border:1px solid #C8D0DC;border-radius:8px;font-size:13px;color:#0B1F3A;background:#F2F4F8;outline:none}
+.mal-form{background:#fff;border-radius:12px;padding:18px;margin-bottom:12px;box-shadow:0 2px 12px rgba(11,34,101,.07);border-left:4px solid #C9A84C}
+.mal-form-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.mal-form-title{font-size:13px;font-weight:bold;color:#0B1F3A}
+.btn-slett-mal{padding:3px 10px;border-radius:6px;border:1px solid #ffaaaa;background:transparent;color:#c0392b;font-size:11px;cursor:pointer}
+.alert{padding:9px 12px;border-radius:8px;font-size:12px;margin-top:8px}
+.alert-red{background:rgba(231,76,60,.08);border:1px solid rgba(231,76,60,.3);color:#c0392b}
+.alert-yellow{background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.3);color:#8a6800}
+.alert-green{background:rgba(39,174,96,.08);border:1px solid rgba(39,174,96,.3);color:#1e7e34}
+.tab-switch{display:flex;background:#fff;border-radius:12px;padding:4px;gap:3px;margin-bottom:14px;box-shadow:0 2px 10px rgba(11,34,101,.07)}
+.tab-btn{flex:1;padding:10px;border-radius:9px;border:none;cursor:pointer;font-size:13px;background:transparent;color:#7A8FA8;font-family:inherit;transition:all .2s}
+.tab-btn.active{background:#0B2265;color:#fff;font-weight:bold}
+.upload-zone{border:2px dashed #C8D0DC;border-radius:12px;padding:32px 24px;text-align:center;cursor:pointer;background:#F2F4F8;margin-bottom:12px;transition:all .2s}
+.result-wrap{background:#fff;border-radius:12px;overflow:hidden;margin-bottom:12px}
+.result-hdr{padding:14px 18px;border-bottom:1px solid #C8D0DC}
+.result-band{background:#0B2265;padding:9px 16px}
+.result-band-lbl{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#C9A84C;border-bottom:2px solid #C9A84C;padding-bottom:3px;display:inline-block}
+.result-goal{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-bottom:1px solid #C8D0DC}
+.result-goal:last-child{border-bottom:none}
+.result-goal-ikon{font-size:16px;flex-shrink:0;margin-top:1px}
+.result-goal-title{font-size:13px;font-weight:bold;color:#0B1F3A;margin-bottom:2px}
+.result-goal-spf{font-size:11px;color:#1A4B8C;margin-bottom:2px}
+.result-goal-desc{font-size:12px;color:#7A8FA8}
+.btn-back{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:10px;border:1px solid #C8D0DC;background:#fff;color:#0B2265;font-size:14px;cursor:pointer;font-weight:bold;box-shadow:0 2px 8px rgba(11,34,101,.07);margin-bottom:14px;font-family:inherit}
+.btn-danger{padding:7px 14px;border-radius:8px;border:1px solid #ffaaaa;background:transparent;color:#c0392b;font-size:11px;cursor:pointer;font-family:inherit}
+.btn-print{padding:8px 14px;border-radius:8px;border:1px solid #C8D0DC;background:#fff;color:#0B2265;font-size:11px;cursor:pointer;font-family:inherit}
+.no-conv{background:#fff;border-radius:14px;padding:36px 24px;text-align:center;box-shadow:0 2px 14px rgba(11,34,101,.06)}
+.bottom-row{display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:10px}
+.kal-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px}
+.kal-dag{background:#fff;border-radius:12px;min-height:120px;padding:10px;box-shadow:0 2px 8px rgba(11,34,101,.06);border-top:3px solid #C8D0DC}
+.kal-dag.harIdag{border-top-color:#C9A84C;box-shadow:0 2px 12px rgba(201,168,76,.2)}
+.kal-dag-hdr{font-size:11px;font-weight:bold;color:#7A8FA8;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px}
+.kal-dag-dato{font-size:14px;font-weight:bold;color:#0B1F3A;margin-bottom:8px}
+.kal-dag.harIdag .kal-dag-dato{color:#C9A84C}
+.kal-item{display:flex;align-items:center;gap:5px;padding:4px 7px;border-radius:8px;margin-bottom:4px;font-size:11px;cursor:pointer;transition:opacity .15s}
+.kal-item:hover{opacity:.8}
+.kal-item-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.kal-item-txt{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kal-item-status{font-size:9px;opacity:.8}
+.kal-tom{font-size:11px;color:#C8D0DC;font-style:italic;text-align:center;padding:12px 0}
+.kal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.kal-nav-btn{padding:8px 16px;border-radius:9px;border:1px solid #C8D0DC;background:#fff;color:#0B2265;font-size:13px;cursor:pointer;font-weight:bold;font-family:inherit}
+.kal-nav-tittel{font-size:15px;font-weight:bold;color:#0B1F3A}
+.plan-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:10px;margin-bottom:3px}
+@media(max-width:600px){.kal-grid{grid-template-columns:1fr 1fr;}.kal-grid>*:last-child{grid-column:1/-1}}
+.footer{text-align:center;margin-top:18px;font-size:10px;color:#C8D0DC;letter-spacing:1px}
+.mb8{margin-bottom:8px}.mb12{margin-bottom:12px}
+@media(max-width:600px){
+  .page{padding:16px 12px}.hdr{padding:16px}.hdr-title{font-size:16px}
+  .stats-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+  .conv-stat-grid{grid-template-columns:repeat(2,1fr)}
+  .form-3col{grid-template-columns:1fr 1fr}.form-3col>*:last-child{grid-column:1/-1}
+  .form-2col{grid-template-columns:1fr}
+  .two-btns{flex-direction:column}.p-right{width:100%;justify-content:space-between}
+  .kat-tab{padding:6px 2px}.kat-tab-ikon{font-size:13px}.kat-tab-lbl{font-size:9px}
+  .tab-btn{font-size:11px;padding:9px 6px}.detail-tab{font-size:10px}
+}
+@media print{
+  .hdr-btns,.two-btns,.btn-back,.conv-edit-btn,.conv-del-btn,.bottom-row,.topbar,.stats-grid,.filter-bar,.add-form,.tab-switch,.søk-wrap{display:none!important}
+  body{background:#fff}.card,.goal-card,.conv-row{box-shadow:none;border:1px solid #eee}.page{padding:10px}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+
+const C={navy:"#0B2265",blue:"#1A4B8C",gold:"#C9A84C",white:"#fff",offWhite:"#F2F4F8",grey:"#7A8FA8",greyLight:"#C8D0DC",text:"#0B1F3A"};
+const GRUPPER=[
+  {label:"Angrep",  ikon:"⚡",pos:["Spiss","Høyreving","Venstre ving","Offensiv MF"],farge:"#e74c3c"},
+  {label:"Midtbane",ikon:"⚙️",pos:["Sentral MF","Defensiv MF"],farge:C.gold},
+  {label:"Forsvar", ikon:"🛡️",pos:["Høyreback","Midtstopper","Venstreback"],farge:C.blue},
+  {label:"Keeper",  ikon:"🧤",pos:["Keeper"],farge:"#8e44ad"},
+];
+const KATEGORIER=[
+  {id:"fotball",   lbl:"Fotball",   ikon:"⚽",farge:C.blue},
+  {id:"kultur",    lbl:"Kultur",    ikon:"🤝",farge:"#27ae60"},
+  {id:"mentalitet",lbl:"Mentalitet",ikon:"🧠",farge:"#8e44ad"},
+  {id:"fysisk",    lbl:"Fysisk",    ikon:"💪",farge:"#e74c3c"},
+];
+const SAMTALETYPER=[
+  {id:"Spillersamtale", ikon:"💬",farge:C.blue},
+  {id:"Videosamtale",   ikon:"🎬",farge:"#8e44ad"},
+  {id:"Innsjekk",       ikon:"✅",farge:"#27ae60"},
+  {id:"Kampgjennomgang",ikon:"⚽",farge:"#e74c3c"},
+  {id:"Treningssamtale",ikon:"🏃",farge:"#7A8FA8"},
+];
+const OPPFØLGING_REGLER=[
+  {type:"Spillersamtale",ikon:"💬",farge:C.blue,   intervall:42,lbl:"Spillersamtale",sub:"Omfattende samtale – oppdaterer utviklingsmål",kort:"Samtale"},
+  {type:"Videosamtale",  ikon:"🎬",farge:"#8e44ad",intervall:14,lbl:"Videosamtale",  sub:"Se og analyser spillet sammen",               kort:"Video"},
+  {type:"Innsjekk",      ikon:"✅",farge:"#27ae60",intervall:14,lbl:"Innsjekk",       sub:"Rask sjekk – hvordan går det med målene?",    kort:"Innsjekk"},
+];
+const SPILLFASER=[
+  {g:"Angrepsspill",  f:["Byggefase","Kontrollfasen","Skape og Scorefasen"]},
+  {g:"Forsvarsspill", f:["Gjenvinne","Pressefase","Forsvare boks"]},
+  {g:"Overgangsspill",f:["Overgang til angrep","Overgang til forsvar"]},
+];
+
+const SYSTEM_PROMPT=`Du er spillerutviklingsassistent for Stabæk Fotball G17.
+
+ABSOLUTT REGEL: Hent KUN informasjon som faktisk ble sagt i samtalen. Aldri finn på. Tomt felt er bedre enn oppfunnet innhold.
+
+FASE-VEILEDNING:
+NØKKELSKILLE: PRESSE motstanderen = Pressefase. SPILLE UT UNDER motstanderens press = Byggefase.
+
+Angrepsspill (du har ball):
+- Byggefase: frispilling, bygge ut, keeperpress, spille mot press, finne fri mann under motstanders press
+- Kontrollfasen: holde ball rolig, dominere, ballsirkulasjon, veksle side uten press
+- Skape og Scorefasen: avslutning, innlegg, 1.stang, ankomstspill, kantspill, score
+
+Forsvarsspill (motstander har ball):
+- Gjenvinne: de FØRSTE 5 sekundene etter balltap, umiddelbar gjenvinningsreaksjon
+- Pressefase: organisert press fra ditt lag, presstriggere, kjedereaksjon, koordinert
+- Forsvare boks: nær eget mål, innlegg, markeringer, 1F/2F/3F, dødball
+
+Overgangsspill:
+- Overgang til angrep: kontring, start sprint ved ballvinn, hurtig frem i brudd
+- Overgang til forsvar: falle av, retrett, gi rom bak ved balltap
+
+Kategorier:
+- fotball: tekniske/taktiske ferdigheter
+- mentalitet: eget tankesett (robusthet, fokus, gi seg, resette seg)
+- kultur: atferd mot andre (heie frem, stemme, lagsatmosfære)
+- fysisk: kropp og kondisjon
+
+10 EKSEMPLER:
+T01 Finne fri mann når keeper har ball = Byggefase/fotball
+T02 Presse samordnet og lese presstriggere = Pressefase/fotball
+T03 For sen med å snu rett etter balltap = Gjenvinne/fotball
+T04 For sen med å starte løp ved ballvinn = Overgang til angrep/fotball
+T05 Holde ball rolig uten hastverk = Kontrollfasen/fotball
+T06 1F-prinsipp ved innlegg nær mål = Forsvare boks/fotball
+T07 Gir seg etter feil, trenger robusthet = mentalitet
+T08 For stille, heie frem lagkameratene = kultur
+T09 Henger igjen offensivt ved balltap = Overgang til forsvar/fotball
+T10 Avslutte på 1.stang ved kantspill = Skape og Scorefasen/fotball
+
+FELTFORKLARING:
+- tittel: Teknikken/fokusområdet, maks 4 ord
+- kortbeskrivelse: Skriv DIREKTE TIL SPILLEREN med "du". "Du skal bli bedre på..." ikke "Spilleren skal..."
+- detaljer.mal: Beskriv ferdighetsgapet og målet. Aldri gjenta tittel. Gi kontekst og dybde.
+- detaljer.tiltak: HENT ALLE tiltak nevnt i samtalen. Minst 1 hvis noe om fremover ble sagt. Foreslå enkelt tiltak basert på målet hvis ingen nevnt eksplisitt.
+- detaljer.maling: Hent måleparametere. Foreslå enkel egenvurdering hvis ingen nevnt.
+
+RETURNER KUN dette JSON:
+{"drommeMal":"","type":"Spillersamtale","mal":[{"tittel":"","kortbeskrivelse":"","prioritet":"Høy","kategori":"fotball","spillfase":"","ikon":"🎯","detaljer":{"mal":"","tiltak":[],"maling":[]}}]}`;
+
+const LS={
+  gp:()=>{try{return JSON.parse(localStorage.getItem('g17_p')||'[]')}catch{return[]}},
+  sp:l=>localStorage.setItem('g17_p',JSON.stringify(l)),
+  gc:id=>{try{return JSON.parse(localStorage.getItem('g17_c_'+id)||'[]')}catch{return[]}},
+  sc:(id,l)=>localStorage.setItem('g17_c_'+id,JSON.stringify(l)),
+  glogo:()=>localStorage.getItem('g17_logo')||null,
+  slogo:v=>localStorage.setItem('g17_logo',v),
+  gkey:()=>localStorage.getItem('g17_key')||'',
+  skey:v=>localStorage.setItem('g17_key',v),
+};
+
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
+function oppfølgingStatus(convs,type,intervall){
+  const alle=convs.filter(c=>c.type===type).map(c=>dagTall(c.dato)).filter(n=>n<999).sort((a,b)=>a-b);
+  if(!alle.length)return{status:'aldri',dager:null,txt:'Aldri gjennomført',dot:'#e74c3c',pst:100};
+  const d=alle[0];
+  const igjen=intervall-d;
+  const pst=Math.min(100,Math.round((d/intervall)*100));
+  if(igjen>3) return{status:'ok',    dager:igjen, txt:igjen+' dager igjen',  dot:'#27ae60',pst};
+  if(igjen>=0)return{status:'snart', dager:igjen, txt:igjen===0?'I dag!':igjen+' dag'+(igjen!==1?'er':'')+' igjen',dot:'#f39c12',pst};
+  return       {status:'forfalt',dager:Math.abs(igjen),txt:Math.abs(igjen)+' dag'+(Math.abs(igjen)!==1?'er':'')+' forfalt',dot:'#e74c3c',pst:100};
+}
+function gruppeFor(pos){return GRUPPER.find(g=>g.pos.includes(pos))||{label:"Andre",ikon:"👟",farge:C.grey}}
+function today(){const d=new Date();return d.getDate()+'.'+(d.getMonth()+1)+'.'+d.getFullYear()}
+function parseDato(dato){
+  if(!dato)return null;
+  if(dato.includes('-')&&dato.length===10)return new Date(dato);
+  const p=dato.split('.');
+  if(p.length<3)return null;
+  return new Date(p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0'));
+}
+function dagTall(dato){
+  if(!dato)return 999;
+  const d=parseDato(dato);
+  if(!d||isNaN(d))return 999;
+  const v=Math.floor((Date.now()-d)/86400000);
+  return v<0?999:v;
+}
+function formatDato(dato){
+  if(!dato)return '';
+  if(dato.includes('-')&&dato.length===10){const[y,m,d]=dato.split('-');return d+'.'+m+'.'+y;}
+  return dato;
+}
+function statusFor(dato){
+  const d=dagTall(dato);
+  if(d===999)return{bg:"rgba(231,76,60,.1)",txt:"#b03a2e",border:"rgba(231,76,60,.35)",lbl:"Ingen samtale",dot:"#e74c3c"};
+  if(d<=14)  return{bg:"rgba(39,174,96,.1)", txt:"#1e7e34",border:"rgba(39,174,96,.35)", lbl:"Siste 2 uker",   dot:"#27ae60"};
+  if(d<=35)  return{bg:"rgba(243,156,18,.1)",txt:"#b7770a",border:"rgba(243,156,18,.35)",lbl:"3–5 uker siden",  dot:"#f39c12"};
+  return      {bg:"rgba(231,76,60,.1)", txt:"#b03a2e",border:"rgba(231,76,60,.35)",lbl:"Over 6 uker",   dot:"#e74c3c"};
+}
+function el(tag,attrs,children){
+  const e=document.createElement(tag);
+  for(const[k,v]of Object.entries(attrs||{})){
+    if(k==='style'&&typeof v==='object')Object.assign(e.style,v);
+    else if(k.startsWith('on'))e[k.toLowerCase()]=v;
+    else if(k==='className')e.className=v;
+    else e.setAttribute(k,v);
+  }
+  if(typeof children==='string')e.textContent=children;
+  else if(Array.isArray(children))children.filter(Boolean).forEach(c=>e.appendChild(typeof c==='string'?document.createTextNode(c):c));
+  else if(children&&typeof children==='object'&&children.tag!==undefined)e.appendChild(children);
+  return e;
+}
+function div(attrs,children){return el('div',attrs,children)}
+function btn(attrs,txt){const b=el('button',attrs);b.textContent=txt;return b}
+function inp(attrs){return el('input',attrs)}
+function txt2(attrs){return el('textarea',attrs)}
+
+const S={
+  view:'overview',prevView:'overview',kalUke:0,players:LS.gp(),selected:null,convs:[],
+  filter:'alle',søk:'',showAdd:false,logo:LS.glogo(),apiKey:LS.gkey(),showSettings:false,
+  expandedConv:null,convTab:'manuell',samtaleType:'Spillersamtale',samtaleDato:'',
+  samtaleNotat:'',samtaleDrøm:'',mal:[],analyseTekst:'',analyzing:false,
+  convResult:null,convFeil:'',lydFil:null,lydNavn:'',transkriberer:false,transkFeil:'',
+  editingConv:null,editForm:null,trenderAnalyse:null,trenderFeil:'',trenderLoading:false,
+  trendData:null,trendLaster:false,trendFeil:'',
+};
+let _render=null;
+function setState(patch){Object.assign(S,patch);_render();}
+
+function render(){
+  const app=document.getElementById('app');app.innerHTML='';
+  try{
+    let v;
+    if(S.view==='overview')v=renderOverview();
+    else if(S.view==='oppfølging')v=renderOppfølging();
+    else if(S.view==='kalender')v=renderKalender();
+    else if(S.view==='trender')v=renderTrender();
+    else if(S.view==='player')v=renderPlayer();
+    else if(S.view==='new-conv')v=renderNewConv();
+    else if(S.view==='edit-conv')v=renderEditConv();
+    else v=div({},'...');
+    app.appendChild(v);
+  }catch(err){
+    app.innerHTML='<div style="padding:32px;font-family:monospace;background:#fff0f0;color:#c0392b;border-radius:12px;margin:24px;font-size:13px"><b>Feil i ' + S.view + ':</b><br><br>' + err.message + '<br><br><small>' + (err.stack||'').split('\n').slice(0,4).join('<br>') + '</small></div>';
+    console.error('Render error in view='+S.view, err);
+  }
+}
+_render=render;
+
+function renderHeader(title,sub,onBack){
+  const hdr=div({className:'hdr'});
+  const row=div({className:'hdr-row'});
+  const left=div({className:'hdr-left'});
+  const linp=inp({type:'file',accept:'image/*',style:{display:'none'}});
+  linp.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{LS.slogo(ev.target.result);setState({logo:ev.target.result});};r.readAsDataURL(f);};
+  const lbox=div({className:'logo-box',title:'Last opp logo'});
+  if(S.logo){const img=document.createElement('img');img.src=S.logo;img.style.cssText='width:100%;height:100%;object-fit:contain';lbox.appendChild(img);}
+  else lbox.textContent='Logo';
+  lbox.onclick=()=>linp.click();left.appendChild(linp);left.appendChild(lbox);
+  const info=div({});
+  info.appendChild(div({className:'hdr-lbl'},'Stabæk Fotball · G17'));
+  info.appendChild(div({className:'hdr-title'},title));
+  if(sub)info.appendChild(div({className:'hdr-sub'},sub));
+  left.appendChild(info);
+  const btns=div({className:'hdr-btns'});
+  if(onBack){const bb=btn({className:'btn-hdr'},onBack.label||'← Tilbake');bb.onclick=onBack.fn;btns.appendChild(bb);}
+  const gb=btn({className:'btn-icon',title:'Innstillinger'},'⚙️');
+  gb.onclick=()=>setState({showSettings:!S.showSettings});
+  btns.appendChild(gb);row.appendChild(left);row.appendChild(btns);hdr.appendChild(row);
+  if(S.showSettings){
+    const s=div({className:'settings'});
+    s.appendChild(div({className:'settings-lbl'},'Groq API-nøkkel (gratis)'));
+    const sr=div({className:'settings-row'});
+    const ki=inp({type:'password',placeholder:'gsk_...'});ki.value=S.apiKey||'';
+    const sb=btn({className:'btn-gold'},'Lagre');
+    sb.onclick=()=>{const v=ki.value.trim();S.apiKey=v;LS.skey(v);sb.textContent='✓ Lagret!';sb.style.background='#27ae60';setTimeout(()=>{sb.textContent='Lagre';sb.style.background='';},2000);};
+    sr.appendChild(ki);sr.appendChild(sb);s.appendChild(sr);
+    s.appendChild(div({className:'settings-hint'},'Hent gratis nøkkel på console.groq.com → API Keys → Create · Ingen betalingskort'));
+    s.appendChild(div({className:'settings-info'},'✅ Stabæks fagplan, spillfaser og fagspråk er innebygd i systemet'));
+    const cb=btn({className:'btn-close-settings'},'✕ Lukk');cb.onclick=()=>setState({showSettings:false});s.appendChild(cb);
+    hdr.appendChild(s);
+  }
+  return hdr;
+}
+
+function renderOverview(){
+  const page=div({className:'page'});const wrap=div({className:'wrap'});page.appendChild(wrap);
+  const total=S.players.reduce((s,p)=>s+(p.ant||0),0);
+  wrap.appendChild(renderHeader('Spilleroversikt',S.players.length+' spillere · '+total+' samtaler'));
+  if(S.players.length>0){
+    const gr=S.players.filter(p=>dagTall(p.sist)<=14).length;
+    const ro=S.players.filter(p=>dagTall(p.sist)>35).length;
+    const sg=div({className:'stats-grid'});
+    [{id:'alle',ikon:'👥',tall:S.players.length,lbl:'Spillere',farge:C.navy},
+     {id:'samtaler',ikon:'💬',tall:total,lbl:'Samtaler',farge:C.blue},
+     {id:'grønn',ikon:'🟢',tall:gr,lbl:'Aktive 2 uker',farge:'#27ae60'},
+     {id:'rød',ikon:'🔴',tall:ro,lbl:'Trenger oppfølging',farge:'#e74c3c'},
+    ].forEach(s=>{
+      const ac=S.filter===s.id;
+      const c=div({className:'stat-card'+(ac?' active':'')});
+      c.style.borderTopColor=s.farge;
+      c.appendChild(div({className:'stat-ikon'},s.ikon));
+      c.appendChild(div({className:'stat-tall'},String(s.tall)));
+      c.appendChild(div({className:'stat-lbl'},s.lbl));
+      if(ac)c.appendChild(div({className:'stat-active-lbl'},'AKTIVT FILTER'));
+      c.onclick=()=>setState({filter:ac?'alle':s.id});
+      sg.appendChild(c);
+    });
+    wrap.appendChild(sg);
+  }
+  if(S.players.length>0){
+    const sw=div({className:'søk-wrap'});
+    const si=inp({className:'søk-inp',placeholder:'🔍  Søk etter spiller eller posisjon...'});
+    si.value=S.søk||'';si.oninput=e=>{S.søk=e.target.value;render();};
+    sw.appendChild(si);wrap.appendChild(sw);
+  }
+  // Oppfølgings-navigasjon
+  const navRow=div({style:{display:'flex',gap:'10px',marginBottom:'14px'}});
+  [{v:'overview',lbl:'👥 Oversikt'},{v:'oppfølging',lbl:'📅 Oppfølgingsplan'},{v:'kalender',lbl:'🗓️ Kalender'}].forEach(t=>{
+    const tb=btn({style:{flex:1,padding:'10px',borderRadius:'10px',border:S.view===t.v?'2px solid '+C.navy:'2px solid #C8D0DC',background:S.view===t.v?C.navy:'#fff',color:S.view===t.v?'#fff':C.navy,fontSize:'12px',cursor:'pointer',fontWeight:'bold',fontFamily:'inherit'}},t.lbl);
+    tb.onclick=()=>setState({view:t.v});navRow.appendChild(tb);
+  });wrap.appendChild(navRow);
+
+  const topbar=div({className:'topbar'});
+  const ab=btn({className:'btn-primary'},S.showAdd?'✕ Avbryt':'+ Legg til spiller');
+  ab.onclick=()=>setState({showAdd:!S.showAdd});topbar.appendChild(ab);
+  if(S.filter!=='alle'){
+    const fb=div({className:'filter-bar',style:{flex:'1'}});
+    const fs=document.createElement('span');
+    fs.textContent=S.filter==='grønn'?'🟢 Aktive siste 2 uker':S.filter==='rød'?'🔴 Ingen samtale / over 6 uker':'💬 Sortert etter flest samtaler';
+    fs.style.flex='1';fs.style.fontSize='13px';
+    const xb=btn({className:'btn-clear'},'Vis alle ✕');xb.onclick=()=>setState({filter:'alle'});
+    fb.appendChild(fs);fb.appendChild(xb);topbar.appendChild(fb);
+  }
+  wrap.appendChild(topbar);
+  if(S.showAdd){
+    const af=div({className:'add-form'});
+    af.appendChild(div({style:{fontSize:'13px',fontWeight:'bold',color:C.text,marginBottom:'14px'}},'Ny spiller'));
+    const fg=div({className:'form-3col'});
+    const ng=div({className:'form-group'});ng.innerHTML='<label>Navn *</label>';
+    const ni=inp({className:'form-input',placeholder:'Fornavn Etternavn'});ng.appendChild(ni);
+    const ag=div({className:'form-group'});ag.innerHTML='<label>Alder</label>';
+    const ai=inp({className:'form-input',type:'number',placeholder:'17'});ag.appendChild(ai);
+    const pg=div({className:'form-group'});pg.innerHTML='<label>Posisjon *</label>';
+    const ps=document.createElement('select');ps.className='form-select';
+    ps.innerHTML='<option value="">Velg</option>';
+    GRUPPER.forEach(g=>ps.innerHTML+=`<optgroup label="${g.ikon} ${g.label}">${g.pos.map(x=>`<option value="${x}">${x}</option>`).join('')}</optgroup>`);
+    pg.appendChild(ps);fg.appendChild(ng);fg.appendChild(ag);fg.appendChild(pg);af.appendChild(fg);
+    const fb2=div({className:'form-btns'});
+    const avb=btn({className:'btn-sec'},'Avbryt');avb.onclick=()=>setState({showAdd:false});
+    const svb=btn({className:'btn-save'},'Lagre spiller');
+    svb.onclick=()=>{
+      if(!ni.value.trim()||!ps.value)return;
+      const ny={id:uid(),navn:ni.value.trim(),alder:parseInt(ai.value)||0,posisjon:ps.value,dato:today(),ant:0,sist:null};
+      const op=[...S.players,ny];LS.sp(op);setState({players:op,showAdd:false});
+    };
+    fb2.appendChild(avb);fb2.appendChild(svb);af.appendChild(fb2);wrap.appendChild(af);
+  }
+  if(S.players.length===0){
+    const em=div({className:'empty'});em.appendChild(div({className:'empty-ikon'},'👥'));
+    em.appendChild(el('h3',{},'Ingen spillere ennå'));
+    em.appendChild(el('p',{},'Trykk «+ Legg til spiller» for å komme i gang.'));
+    wrap.appendChild(em);
+  } else {
+    GRUPPER.forEach(g=>{
+      let sp=S.players.filter(p=>g.pos.includes(p.posisjon));
+      if(S.søk)sp=sp.filter(p=>p.navn.toLowerCase().includes(S.søk.toLowerCase())||p.posisjon.toLowerCase().includes(S.søk.toLowerCase()));
+      if(S.filter==='grønn')sp=sp.filter(p=>dagTall(p.sist)<=14);
+      if(S.filter==='rød')sp=sp.filter(p=>dagTall(p.sist)>35);
+      if(S.filter==='samtaler')sp=[...sp].sort((a,b)=>b.ant-a.ant);
+      if(!sp.length)return;
+      const grp=div({style:{marginBottom:'20px'}});
+      const gh=div({className:'group-hdr'});
+      const gc2=div({className:'group-circle',style:{background:g.farge}});gc2.textContent=g.ikon;
+      gh.appendChild(gc2);gh.appendChild(div({className:'group-label'},g.label));
+      gh.appendChild(div({className:'group-count'},'· '+sp.length+' spiller'+(sp.length!==1?'e':'')));
+      gh.appendChild(div({className:'group-line'}));grp.appendChild(gh);
+      sp.forEach(p=>{
+        const st=statusFor(p.sist);
+        const c0=LS.gc(p.id);
+        const smm=[...c0].reverse().find(s=>(s.mal||[]).some(m=>m.tittel?.trim()));
+        const akt=smm?.mal?.[0];
+        const kat=KATEGORIER.find(k=>k.id===akt?.kategori);
+        const pc=div({className:'p-card',style:{borderLeftColor:g.farge}});
+        pc.onmouseenter=()=>{pc.style.boxShadow='0 6px 20px rgba(11,34,101,.13)';pc.style.borderLeftColor=C.gold;};
+        pc.onmouseleave=()=>{pc.style.boxShadow='';pc.style.borderLeftColor=g.farge;};
+        pc.onclick=()=>setState({selected:p,convs:LS.gc(p.id),view:'player',expandedConv:null,trendData:null,trendFeil:''});
+        const pi=div({className:'p-card-inner'});
+        const av=div({className:'p-avatar'});av.textContent=p.navn.charAt(0);
+        const info=div({className:'p-info'});
+        info.appendChild(div({className:'p-name'},p.navn));
+        info.appendChild(div({className:'p-pos'},p.posisjon+(p.alder>0?' · '+p.alder+' år':'')));
+        const ml=div({className:'p-mal'+(akt?'':' none')});
+        ml.textContent=akt?(kat?kat.ikon+' '+akt.kortbeskrivelse:akt.kortbeskrivelse):'Ingen mål registrert';
+        const pr=div({className:'p-right'});
+        const cnt=div({className:'p-count'});
+        const cn=div({className:'p-count-n',style:{color:(p.ant||0)>0?C.navy:'#C8D0DC'}});cn.textContent=String(p.ant||0);
+        cnt.appendChild(cn);cnt.appendChild(div({className:'p-count-l'},'SAMTAL.'));
+        const chip=div({className:'status-chip',style:{background:st.bg,border:'1px solid '+st.border,color:st.txt}});
+        const dot=div({className:'status-dot',style:{background:st.dot}});
+        chip.appendChild(dot);chip.appendChild(document.createTextNode(st.lbl));
+        pr.appendChild(cnt);pr.appendChild(chip);pr.appendChild(div({className:'chevron'},'›'));
+        pi.appendChild(av);pi.appendChild(info);pi.appendChild(ml);pi.appendChild(pr);
+        pc.appendChild(pi);
+        // Mini oppfølgings-stripe
+        const c0all=LS.gc(p.id);
+        if(c0all.length>0||p.ant===0){
+          const strip=div({style:{padding:'6px 16px 8px',background:'#F2F4F8',borderTop:'1px solid #C8D0DC',display:'flex',gap:'10px',flexWrap:'wrap',alignItems:'center'}});
+          OPPFØLGING_REGLER.forEach(r=>{
+            const st=oppfølgingStatus(c0all,r.type,r.intervall);
+            const s=div({style:{display:'inline-flex',alignItems:'center',gap:'3px',fontSize:'10px',color:st.dot}});
+            const d=div({style:{width:6,height:6,borderRadius:'50%',background:st.dot,flexShrink:0}});
+            s.appendChild(d);s.appendChild(document.createTextNode(r.ikon+' '+r.kort+': '+st.txt));
+            strip.appendChild(s);
+          });
+          pc.appendChild(strip);
+        }
+        grp.appendChild(pc);
+      });
+      wrap.appendChild(grp);
+    });
+  }
+  wrap.appendChild(div({className:'footer'},'STABÆK FOTBALL · G17 · KONFIDENSIELT'));
+  return page;
+}
+
+function renderGoalCard(m,gruppe,state,onToggle,onTab){
+  const k2=KATEGORIER.find(k=>k.id===(m.kategori||'fotball'));
+  const isOpen=state.open===m.tittel;
+  const gc=div({className:'goal-card',style:{borderLeftColor:isOpen?C.gold:(k2?.farge||gruppe.farge)}});
+  const gh=div({className:'goal-hdr'});
+  const gi=div({className:'goal-ikon'+(isOpen?' open':'')});gi.textContent=m.ikon||'🎯';
+  const gt=div({className:'goal-text'});
+  const badges=div({className:'goal-badges'});
+  const pri=div({className:'pri-badge'});
+  const ps={Høy:{bg:'rgba(201,168,76,.15)',c:'#B8860B',b:'rgba(201,168,76,.5)'},Middels:{bg:'rgba(26,75,140,.12)',c:'#1A4B8C',b:'rgba(26,75,140,.4)'},Lav:{bg:'rgba(60,179,113,.12)',c:'#2E8B57',b:'rgba(60,179,113,.4)'}}[m.prioritet]||{};
+  pri.style.background=ps.bg;pri.style.color=ps.c;pri.style.border='1px solid '+ps.b;pri.textContent=m.prioritet;
+  badges.appendChild(pri);
+  if(m.spillfase){
+    const spfb=div({className:'spf-badge',style:{background:(k2?.farge||C.blue)+'12',border:'1px solid '+(k2?.farge||C.blue)+'33'}});
+    spfb.appendChild(el('span',{style:{fontSize:'9px',color:k2?.farge||C.blue}},'📍'));
+    spfb.appendChild(document.createTextNode(m.spillfase));
+    badges.appendChild(spfb);
+  }
+  gt.appendChild(badges);
+  gt.appendChild(div({className:'goal-focus'},m.kortbeskrivelse||m.tittel));
+  if(m.tittel&&m.kortbeskrivelse)gt.appendChild(div({className:'goal-label'},m.tittel));
+  const chev=div({className:'goal-chevron'+(isOpen?' open':'')});chev.textContent='›';
+  gh.appendChild(gi);gh.appendChild(gt);gh.appendChild(chev);gc.appendChild(gh);
+  gc.onclick=()=>onToggle(m.tittel);
+  if(isOpen&&m.detaljer){
+    const gd=div({className:'goal-detail'});
+    const dtabs=div({className:'detail-tabs'});
+    [{id:'mal',lbl:'🎯 Mål'},{id:'tiltak',lbl:'🔧 Tiltak'},{id:'maling',lbl:'📊 Måling'}].forEach(t=>{
+      const dt=btn({className:'detail-tab'+(state.tab===t.id?' active':'')},t.lbl);
+      dt.onclick=e=>{e.stopPropagation();onTab(t.id);};
+      dtabs.appendChild(dt);
+    });
+    gd.appendChild(dtabs);
+    const db=div({className:'detail-body'});
+    if(state.tab==='mal'){
+      if(!m.detaljer.mal||m.detaljer.mal===m.tittel){
+        db.appendChild(div({className:'detail-empty'},'Ingen utdypende beskrivelse. Bruk ✏️ for å legge til.'));
+      } else {const p2=document.createElement('p');p2.textContent=m.detaljer.mal;db.appendChild(p2);}
+    } else if(state.tab==='tiltak'){
+      if(!(m.detaljer.tiltak||[]).length)db.appendChild(div({className:'detail-empty'},'Ingen tiltak registrert.'));
+      else (m.detaljer.tiltak||[]).forEach((t,ti)=>{const di=div({className:'detail-item'});const dn=div({className:'detail-num'});dn.textContent=String(ti+1);const dp=document.createElement('p');dp.textContent=t;di.appendChild(dn);di.appendChild(dp);db.appendChild(di);});
+    } else {
+      if(!(m.detaljer.maling||[]).length)db.appendChild(div({className:'detail-empty'},'Ingen måleparametere registrert.'));
+      else (m.detaljer.maling||[]).forEach(ml=>{const di=div({className:'detail-item maling'});const sp=el('span',{});sp.textContent='📏';const dp=document.createElement('p');dp.textContent=ml;di.appendChild(sp);di.appendChild(dp);db.appendChild(di);});
+    }
+    gd.appendChild(db);gc.appendChild(gd);
+  }
+  return gc;
+}
+
+function renderNåværendeMål(samtale,gruppe){
+  const state={kat:'fotball',open:null,tab:'mal'};
+  const wrap=div({style:{marginBottom:'20px'}});
+  const hr=div({style:{display:'flex',alignItems:'center',gap:'8px',marginBottom:'10px'}});
+  hr.appendChild(div({style:{fontSize:'10px',color:C.gold,letterSpacing:'2px',textTransform:'uppercase'}},'🎯 Nåværende utviklingsmål'));
+  hr.appendChild(div({style:{height:'1px',flex:'1',background:'rgba(201,168,76,.25)'}}));
+  const t0=SAMTALETYPER.find(x=>x.id===(samtale.type||'Spillersamtale'))||SAMTALETYPER[0];
+  const tb=div({className:'type-badge',style:{background:t0.farge+'18',border:'1px solid '+t0.farge+'55',color:t0.farge}});
+  tb.textContent=t0.ikon+' '+(samtale.type||'Spillersamtale');
+  hr.appendChild(tb);hr.appendChild(el('span',{style:{fontSize:'10px',color:C.grey}},'· '+samtale.dato));
+  wrap.appendChild(hr);
+  if(samtale.notat){const nb=div({className:'notat-box',style:{marginBottom:'12px'}});nb.appendChild(div({className:'notat-lbl'},'📋 Notat'));const np=document.createElement('p');np.textContent=samtale.notat;nb.appendChild(np);wrap.appendChild(nb);}
+  function buildContent(){
+    const old=wrap.querySelector('.mal-section');if(old)old.remove();
+    const sec=div({className:'mal-section'});
+    const tabs=div({className:'kat-tabs'});
+    KATEGORIER.forEach(k=>{
+      const ant=(samtale.mal||[]).filter(m=>(m.kategori||'fotball')===k.id).length;
+      const aktiv=state.kat===k.id;
+      const tb2=div({className:'kat-tab'+(aktiv?' active':'')});
+      if(aktiv)tb2.style.background=k.farge;
+      tb2.appendChild(div({className:'kat-tab-ikon'},k.ikon));
+      tb2.appendChild(div({className:'kat-tab-lbl'},k.lbl));
+      if(ant>0)tb2.appendChild(div({className:'kat-tab-ant',style:{color:aktiv?'rgba(255,255,255,.8)':k.farge}},ant+' mål'));
+      tb2.onclick=()=>{state.kat=k.id;state.open=null;buildContent();};
+      tabs.appendChild(tb2);
+    });
+    sec.appendChild(tabs);
+    const filtrert=(samtale.mal||[]).filter(m=>(m.kategori||'fotball')===state.kat);
+    if(!filtrert.length){
+      const em=div({style:{background:C.white,borderRadius:'12px',padding:'22px 18px',textAlign:'center',boxShadow:'0 2px 10px rgba(11,34,101,.06)'}});
+      em.appendChild(div({style:{fontSize:'22px',marginBottom:'5px'}},KATEGORIER.find(k=>k.id===state.kat)?.ikon||''));
+      em.appendChild(div({style:{fontSize:'12px',color:C.grey}},'Ingen '+state.kat+'-mål i denne samtalen'));
+      sec.appendChild(em);
+    } else {
+      filtrert.forEach(m=>sec.appendChild(renderGoalCard(m,gruppe,state,
+        (t)=>{state.open=state.open===t?null:t;state.tab='mal';buildContent();},
+        (t)=>{state.tab=t;buildContent();})));
+    }
+    if(samtale.drommeMal){const dm=div({className:'dream'});const dmi=div({});dmi.appendChild(div({className:'dream-lbl'},'⭐ Drømmemål'));const dp=document.createElement('p');dp.textContent=samtale.drommeMal;dmi.appendChild(dp);dm.appendChild(dmi);sec.appendChild(dm);}
+    wrap.appendChild(sec);
+  }
+  buildContent();
+  return wrap;
+}
+
+function renderPlayer(){
+  const p=S.selected;if(!p)return renderOverview();
+  const g=gruppeFor(p.posisjon);
+  const page=div({className:'page'});const wrap=div({className:'wrap-sm'});page.appendChild(wrap);
+  wrap.appendChild(renderHeader(p.navn,g.ikon+' '+p.posisjon+(p.alder>0?' · '+p.alder+' år':''),{label:'← G17',fn:()=>setState({view:'overview',selected:null})}));
+  const tb=div({className:'two-btns'});
+  const mb=btn({style:{background:C.navy,color:'#fff',border:'none',boxShadow:'0 4px 14px rgba(11,34,101,.15)'}},'📝 Registrer samtale');
+  mb.onclick=()=>setState({view:'new-conv',convTab:'manuell',convResult:null,convFeil:'',analyseTekst:'',samtaleType:'Spillersamtale',samtaleDato:'',samtaleNotat:'',samtaleDrøm:'',mal:[{id:uid(),tittel:'',kortbeskrivelse:'',prioritet:'Høy',kategori:'fotball',spillfase:'',detaljerMal:'',tiltak:'',maling:''}]});
+  const aib=btn({style:{background:'#fff',color:C.navy,border:'2px solid '+C.navy}},'🤖 AI-analyse');
+  aib.onclick=()=>setState({view:'new-conv',convTab:'ai',convResult:null,convFeil:'',analyseTekst:''});
+  const trnBtn=btn({style:{background:'#fff',color:'#8e44ad',border:'2px solid #8e44ad'}},'📈 Trender');
+  trnBtn.onclick=()=>setState({view:'trender',trenderAnalyse:null,trenderFeil:'',trenderLoading:false});
+  tb.appendChild(mb);tb.appendChild(aib);tb.appendChild(trnBtn);wrap.appendChild(tb);
+  const smm=[...S.convs].reverse().find(s=>(s.mal||[]).some(m=>m.tittel?.trim()));
+  if(smm)wrap.appendChild(renderNåværendeMål(smm,g));
+  if(S.convs.length>0){
+    wrap.appendChild(div({className:'section-lbl'},'Samtalestatistikk'));
+    const cg=div({className:'conv-stat-grid'});
+    SAMTALETYPER.forEach(t=>{
+      const ant=S.convs.filter(c=>(c.type||'Spillersamtale')===t.id).length;
+      const sc=div({className:'conv-stat'+(ant>0?' has':'')});
+      sc.style.cssText+=';--farge:'+t.farge;if(ant>0)sc.style.borderTopColor=t.farge;
+      sc.appendChild(div({className:'conv-stat-ikon'},t.ikon));
+      sc.appendChild(div({className:'conv-stat-n'},String(ant)));
+      sc.appendChild(div({className:'conv-stat-l'},t.id.replace('samtale','').replace('gjennomgang','g.gang')));
+      cg.appendChild(sc);
+    });
+    wrap.appendChild(cg);
+  }
+  wrap.appendChild(div({className:'section-lbl'},'Samtalehistorikk · '+S.convs.length+' samtale'+(S.convs.length!==1?'r':'')));
+  if(!S.convs.length){
+    const nc=div({className:'no-conv'});nc.appendChild(div({style:{fontSize:'28px',marginBottom:'8px'}},'💬'));
+    nc.appendChild(div({style:{fontSize:'14px',fontWeight:'bold',color:C.text,marginBottom:'5px'}},'Ingen samtaler ennå'));
+    nc.appendChild(div({style:{fontSize:'12px',color:C.grey}},'Bruk knappene over for å registrere første samtale.'));
+    wrap.appendChild(nc);
+  } else {
+    [...S.convs].reverse().forEach((c,i)=>{
+      const num=S.convs.length-i;
+      const isOpen=S.expandedConv===c.id;
+      const t0=SAMTALETYPER.find(x=>x.id===(c.type||'Spillersamtale'))||SAMTALETYPER[0];
+      const row=div({className:'conv-row'});
+      const hr2=div({className:'conv-hdr-row'+(isOpen?' open':'')});
+      const cl=div({className:'conv-clickable'});
+      cl.onclick=()=>setState({expandedConv:isOpen?null:c.id});
+      const nm=div({className:'conv-num'+(isOpen?' open':'')});nm.textContent=String(num);
+      const meta=div({className:'conv-meta'});
+      const tr2=div({className:'conv-title-row'});
+      tr2.appendChild(div({className:'conv-title'},'Samtale '+num));
+      const tbadge=div({className:'type-badge',style:{background:t0.farge+'18',border:'1px solid '+t0.farge+'55',color:t0.farge}});
+      tbadge.textContent=t0.ikon+' '+t0.id;tr2.appendChild(tbadge);meta.appendChild(tr2);
+      const dr2=div({className:'conv-detail-row'});
+      dr2.appendChild(el('span',{},'📅 '+c.dato));
+      const spfs=[...new Set((c.mal||[]).map(m=>m.spillfase).filter(Boolean))];
+      spfs.forEach(sf=>dr2.appendChild(el('span',{},'📍 '+sf)));
+      dr2.appendChild(el('span',{},(c.mal||[]).length+' mål'));
+      if(c.notat)dr2.appendChild(el('span',{style:{color:C.gold}},'📋'));
+      meta.appendChild(dr2);
+      const chev2=div({className:'conv-chevron'+(isOpen?' open':'')});chev2.textContent='›';
+      cl.appendChild(nm);cl.appendChild(meta);cl.appendChild(chev2);hr2.appendChild(cl);
+      const eb=btn({className:'conv-edit-btn',title:'Rediger'},'✏️');
+      eb.onclick=e=>{e.stopPropagation();openEdit(c);};
+      const db2=btn({className:'conv-del-btn',title:'Slett'},'🗑');
+      db2.onclick=e=>{e.stopPropagation();slettConv(c.id);};
+      hr2.appendChild(eb);hr2.appendChild(db2);row.appendChild(hr2);
+      if(isOpen){
+        const body=div({className:'conv-body'});
+        if(c.notat){const nb=div({className:'notat-box'});nb.appendChild(div({className:'notat-lbl'},'📋 Notat'));const np=document.createElement('p');np.textContent=c.notat;nb.appendChild(np);body.appendChild(nb);}
+        if((c.mal||[]).length)body.appendChild(renderNåværendeMål(c,g));
+        else body.appendChild(div({style:{fontSize:'12px',color:C.grey,fontStyle:'italic'}},'Ingen utviklingsmål i denne samtalen.'));
+        row.appendChild(body);
+      }
+      wrap.appendChild(row);
+    });
+  }
+  const brow=div({className:'bottom-row'});
+  const printBtn=btn({className:'btn-print'},'🖨️ Skriv ut');printBtn.onclick=()=>window.print();
+  const delBtn=btn({className:'btn-danger'},'Slett spiller');
+  delBtn.onclick=()=>{if(confirm('Slett spilleren og alle samtaler?')){const op=S.players.filter(x=>x.id!==p.id);LS.sp(op);localStorage.removeItem('g17_c_'+p.id);setState({players:op,view:'overview',selected:null});}};
+  brow.appendChild(printBtn);brow.appendChild(delBtn);wrap.appendChild(brow);
+  wrap.appendChild(div({className:'footer'},'STABÆK FOTBALL · G17 · KONFIDENSIELT'));
+  return page;
+}
+
+function renderMalSkjema(m,idx,onChange,onSlett){
+  const k=KATEGORIER.find(k=>k.id===m.kategori)||KATEGORIER[0];
+  const mf=div({className:'mal-form',style:{borderLeftColor:k.farge}});
+  const mfh=div({className:'mal-form-hdr'});
+  mfh.appendChild(div({className:'mal-form-title'},'Mål '+(idx+1)));
+  const sb=btn({className:'btn-slett-mal'},'Slett');sb.onclick=()=>onSlett();mfh.appendChild(sb);mf.appendChild(mfh);
+  const r1=div({className:'form-2col mb8'});
+  const tg=div({});tg.appendChild(div({className:'form-lbl'},'Tittel (maks 4 ord)'));
+  const ti=inp({className:'form-input',placeholder:'Eks: Frispilling mot press',value:m.tittel||''});
+  ti.oninput=e=>onChange('tittel',e.target.value);tg.appendChild(ti);
+  const kg=div({});kg.appendChild(div({className:'form-lbl'},'Kategori'));
+  const ks=document.createElement('select');ks.className='form-select';
+  KATEGORIER.forEach(k2=>ks.innerHTML+=`<option value="${k2.id}"${m.kategori===k2.id?' selected':''}>${k2.ikon} ${k2.lbl}</option>`);
+  ks.onchange=e=>{onChange('kategori',e.target.value);render();};
+  kg.appendChild(ks);r1.appendChild(tg);r1.appendChild(kg);mf.appendChild(r1);
+  const r2=div({className:'form-2col mb8'});
+  const sfg=div({});sfg.appendChild(div({className:'form-lbl'},'Spillfase'));
+  const sfs=document.createElement('select');sfs.className='form-select';
+  sfs.innerHTML='<option value="">Velg spillfase</option>';
+  SPILLFASER.forEach(gr=>sfs.innerHTML+=`<optgroup label="${gr.g}">${gr.f.map(f=>`<option value="${f}"${m.spillfase===f?' selected':''}>${f}</option>`).join('')}</optgroup>`);
+  sfs.onchange=e=>onChange('spillfase',e.target.value);sfg.appendChild(sfs);
+  const prg=div({});prg.appendChild(div({className:'form-lbl'},'Prioritet'));
+  const prs=document.createElement('select');prs.className='form-select';
+  ['Høy','Middels','Lav'].forEach(pr=>prs.innerHTML+=`<option value="${pr}"${m.prioritet===pr?' selected':''}>${pr}</option>`);
+  prs.onchange=e=>onChange('prioritet',e.target.value);prg.appendChild(prs);
+  r2.appendChild(sfg);r2.appendChild(prg);mf.appendChild(r2);
+  const kbg=div({style:{marginBottom:'8px'}});
+  kbg.appendChild(div({className:'form-lbl'},'🎯 Hva skal spilleren jobbe med? (vises fremst på kortet)'));
+  const kbi=inp({className:'form-input',placeholder:'Du skal bli bedre på å...',value:m.kortbeskrivelse||''});
+  kbi.oninput=e=>onChange('kortbeskrivelse',e.target.value);kbg.appendChild(kbi);mf.appendChild(kbg);
+  const dmg=div({style:{marginBottom:'8px'}});
+  dmg.appendChild(div({className:'form-lbl'},'📝 Utdypende beskrivelse av målet (vises i Mål-fanen)'));
+  const dmi=txt2({className:'form-textarea',placeholder:'Beskriv ferdighetsgapet – hva er utfordringen og hva må spilleren lære? Aldri gjenta kortbeskrivelsen.',rows:'3'});
+  dmi.value=m.detaljerMal||'';dmi.oninput=e=>onChange('detaljerMal',e.target.value);dmg.appendChild(dmi);mf.appendChild(dmg);
+  const r3=div({className:'form-2col'});
+  const tig=div({});tig.appendChild(div({className:'form-lbl'},'Tiltak (ett per linje)'));
+  const tia=txt2({className:'form-textarea',placeholder:'Konkrete øvelser og grep\nSom ble diskutert',rows:'3'});
+  tia.value=m.tiltak||'';tia.oninput=e=>onChange('tiltak',e.target.value);tig.appendChild(tia);
+  const mag=div({});mag.appendChild(div({className:'form-lbl'},'Måling (ett per linje)'));
+  const maa=txt2({className:'form-textarea',placeholder:'Slik måler vi fremgang',rows:'3'});
+  maa.value=m.maling||'';maa.oninput=e=>onChange('maling',e.target.value);mag.appendChild(maa);
+  r3.appendChild(tig);r3.appendChild(mag);mf.appendChild(r3);
+  return mf;
+}
+
+function renderNewConv(){
+  const p=S.selected;if(!p)return renderOverview();
+  const g=gruppeFor(p.posisjon);
+  const page=div({className:'page'});const wrap=div({className:'wrap-sm'});page.appendChild(wrap);
+  const bb=btn({className:'btn-back'},'');bb.innerHTML='<span style="font-size:18px">←</span> Tilbake til '+p.navn;
+  bb.onclick=()=>setState({view:'player'});wrap.appendChild(bb);
+  const mhdr=div({style:{background:'linear-gradient(135deg,'+C.navy+',#0d2a6e 60%,'+C.blue+')',borderRadius:'16px',padding:'18px 22px',marginBottom:'14px',boxShadow:'0 4px 20px rgba(11,34,101,.2)'}});
+  mhdr.appendChild(div({style:{fontSize:'9px',letterSpacing:'3px',color:C.gold,textTransform:'uppercase',marginBottom:'3px'}},'Ny samtale'));
+  mhdr.appendChild(div({style:{fontSize:'18px',fontWeight:'bold',color:'#fff'}},p.navn));
+  mhdr.appendChild(div({style:{fontSize:'12px',color:'rgba(200,208,220,.8)',marginTop:'2px'}},g.ikon+' '+p.posisjon));
+  wrap.appendChild(mhdr);
+  const tabs=div({className:'tab-switch'});
+  [{id:'manuell',lbl:'📝 Manuell'},{id:'ai',lbl:'🤖 AI-tekst'},{id:'lyd',lbl:'🎙️ Lydfil'}].forEach(t=>{
+    const tb=btn({className:'tab-btn'+(S.convTab===t.id?' active':'')},t.lbl);
+    tb.onclick=()=>setState({convTab:t.id,convResult:null,convFeil:'',transkFeil:''});tabs.appendChild(tb);
+  });
+  wrap.appendChild(tabs);
+  if(S.convTab==='manuell')wrap.appendChild(renderManuellTab(p));
+  else if(S.convTab==='lyd')wrap.appendChild(renderLydTab(p));
+  else wrap.appendChild(renderAITab(p));
+  return page;
+}
+
+function renderManuellTab(p){
+  const w=div({});
+  const gc=div({className:'card'});
+  gc.appendChild(div({className:'section-lbl'},'Samtaleinfo'));
+  const r=div({className:'form-2col mb12'});
+  const tg=div({});tg.appendChild(div({className:'form-lbl'},'Type samtale'));
+  const ts=document.createElement('select');ts.className='form-select';
+  SAMTALETYPER.forEach(t=>ts.innerHTML+=`<option value="${t.id}"${S.samtaleType===t.id?' selected':''}>${t.ikon} ${t.id}</option>`);
+  ts.onchange=e=>S.samtaleType=e.target.value;tg.appendChild(ts);
+  const dg=div({});dg.appendChild(div({className:'form-lbl'},'Dato'));
+  const di=inp({className:'form-input',type:'date',value:S.samtaleDato||''});
+  di.onchange=e=>S.samtaleDato=e.target.value;dg.appendChild(di);
+  r.appendChild(tg);r.appendChild(dg);gc.appendChild(r);
+  const r2=div({className:'form-2col mb12'});
+  const dmg=div({});dmg.appendChild(div({className:'form-lbl'},'Drømmemål (spillerens egne ord)'));
+  const dmi=inp({className:'form-input',placeholder:'Hva drømmer spilleren om?',value:S.samtaleDrøm||''});
+  dmi.oninput=e=>S.samtaleDrøm=e.target.value;dmg.appendChild(dmi);
+  const ng=div({});ng.appendChild(div({className:'form-lbl'},'Notat (valgfritt)'));
+  const ni=txt2({className:'form-textarea',placeholder:'Hva handlet samtalen om?',rows:'2'});
+  ni.value=S.samtaleNotat||'';ni.oninput=e=>S.samtaleNotat=e.target.value;ng.appendChild(ni);
+  r2.appendChild(dmg);r2.appendChild(ng);gc.appendChild(r2);
+  w.appendChild(gc);
+  w.appendChild(div({className:'section-lbl'},'Utviklingsmål'));
+  function buildMalList(){
+    const old=w.querySelector('.mal-list');if(old)old.remove();
+    const ml=div({className:'mal-list'});
+    (S.mal||[]).forEach((m,idx)=>{
+      ml.appendChild(renderMalSkjema(m,idx,
+        (k,v)=>{m[k]=v;},
+        ()=>{S.mal.splice(idx,1);buildMalList();}));
+    });
+    const abtn=btn({style:{width:'100%',padding:'10px',borderRadius:'10px',border:'2px dashed #C8D0DC',background:'transparent',color:'#7A8FA8',fontSize:'13px',cursor:'pointer',marginBottom:'12px',fontFamily:'inherit'}},'+ Legg til mål');
+    abtn.onclick=()=>{S.mal.push({id:uid(),tittel:'',kortbeskrivelse:'',prioritet:'Høy',kategori:'fotball',spillfase:'',detaljerMal:'',tiltak:'',maling:''});buildMalList();};
+    ml.appendChild(abtn);
+    const sb2=btn({style:{width:'100%',padding:'13px',borderRadius:'12px',border:'none',background:C.gold,color:C.navy,fontSize:'15px',cursor:'pointer',fontWeight:'bold',fontFamily:'inherit',boxShadow:'0 4px 16px rgba(201,168,76,.3)'}},'✅ Lagre samtale');
+    sb2.onclick=lagreManuell;ml.appendChild(sb2);
+    w.appendChild(ml);
+  }
+  if(!S.mal||!S.mal.length)S.mal=[{id:uid(),tittel:'',kortbeskrivelse:'',prioritet:'Høy',kategori:'fotball',spillfase:'',detaljerMal:'',tiltak:'',maling:''}];
+  buildMalList();return w;
+}
+
+function lagreManuell(){
+  const p=S.selected;
+  const dato=formatDato(S.samtaleDato)||today();
+  const ny={id:uid(),type:S.samtaleType||'Spillersamtale',dato,spillfaser:[],notat:S.samtaleNotat||'',drommeMal:S.samtaleDrøm||'',
+    mal:(S.mal||[]).filter(m=>m.tittel.trim()).map(m=>({
+      tittel:m.tittel,kortbeskrivelse:m.kortbeskrivelse||'',prioritet:m.prioritet||'Høy',
+      kategori:m.kategori||'fotball',spillfase:m.spillfase||'',ikon:KATEGORIER.find(k=>k.id===m.kategori)?.ikon||'🎯',
+      detaljer:{mal:m.detaljerMal||'',tiltak:m.tiltak?m.tiltak.split('\n').filter(Boolean):[],maling:m.maling?m.maling.split('\n').filter(Boolean):[]}
+    }))};
+  saveConv(p,ny);
+}
+
+function renderResultat(p){
+  const w=div({});
+  if(!S.convResult)return w;
+  const r=div({className:'result-wrap'});
+  const rh=div({className:'result-hdr'});
+  rh.appendChild(div({style:{fontSize:'10px',color:C.gold,letterSpacing:'2px',textTransform:'uppercase',marginBottom:'4px'}},'Generert spillerkort'));
+  rh.appendChild(div({style:{fontSize:'16px',fontWeight:'bold',color:C.text}},p.navn));
+  r.appendChild(rh);
+  const rb=div({className:'result-band'});rb.appendChild(div({className:'result-band-lbl'},'Utviklingsmål'));r.appendChild(rb);
+  (S.convResult.mal||[]).forEach(m=>{
+    const rg=div({className:'result-goal'});
+    rg.appendChild(div({className:'result-goal-ikon'},m.ikon||'🎯'));
+    const rt=div({});
+    const tr3=div({style:{display:'flex',alignItems:'center',gap:'7px',marginBottom:'2px',flexWrap:'wrap'}});
+    const pri=div({className:'pri-badge'});
+    const ps={Høy:{bg:'rgba(201,168,76,.15)',c:'#B8860B',b:'rgba(201,168,76,.5)'},Middels:{bg:'rgba(26,75,140,.12)',c:'#1A4B8C',b:'rgba(26,75,140,.4)'},Lav:{bg:'rgba(60,179,113,.12)',c:'#2E8B57',b:'rgba(60,179,113,.4)'}}[m.prioritet]||{};
+    pri.style.background=ps.bg;pri.style.color=ps.c;pri.style.border='1px solid '+ps.b;pri.textContent=m.prioritet;
+    tr3.appendChild(pri);rt.appendChild(tr3);
+    if(m.spillfase)rt.appendChild(div({className:'result-goal-spf'},'📍 '+m.spillfase));
+    rt.appendChild(div({className:'result-goal-title'},m.kortbeskrivelse||m.tittel));
+    if(m.tittel&&m.kortbeskrivelse)rt.appendChild(div({className:'result-goal-desc'},m.tittel));
+    rg.appendChild(rt);r.appendChild(rg);
+  });
+  if(S.convResult.drommeMal){const dm=div({className:'dream',style:{margin:'12px 0'}});const dmi=div({});dmi.appendChild(div({className:'dream-lbl'},'⭐ Drømmemål'));const dp=document.createElement('p');dp.textContent=S.convResult.drommeMal;dmi.appendChild(dp);dm.appendChild(dmi);r.appendChild(dm);}
+  w.appendChild(r);
+  const btns=div({style:{display:'flex',gap:'10px',marginTop:'10px'}});
+  const retry=btn({className:'btn-sec'},'← Prøv igjen');retry.onclick=()=>setState({convResult:null,analyseTekst:'',lydFil:null,lydNavn:''});
+  const save=btn({style:{flex:'1',padding:'10px',borderRadius:'8px',border:'none',background:C.gold,color:C.navy,fontSize:'13px',cursor:'pointer',fontWeight:'bold',fontFamily:'inherit'}},'✅ Lagre til spillerprofil');
+  save.onclick=()=>saveConv(p,{...S.convResult,spillfaser:[],dato:today()});
+  btns.appendChild(retry);btns.appendChild(save);w.appendChild(btns);
+  return w;
+}
+
+function renderAITab(p){
+  const w=div({});
+  const card=div({className:'card'});
+  card.appendChild(div({className:'section-lbl'},'Lim inn transkripsjon'));
+  const ta=txt2({className:'form-textarea',placeholder:'Lim inn transkribert samtale her...',rows:'8'});
+  ta.value=S.analyseTekst||'';ta.oninput=e=>S.analyseTekst=e.target.value;card.appendChild(ta);
+  if(!S.apiKey)card.appendChild(div({className:'alert alert-red'},'⚠️ Ingen API-nøkkel. Klikk ⚙️ og legg inn Groq-nøkkel fra console.groq.com.'));
+  else card.appendChild(div({className:'alert alert-green'},'✅ Klar for analyse'));
+  if(S.convFeil)card.appendChild(div({className:'alert alert-red'},'⚠️ '+S.convFeil));
+  const abtn=btn({style:{marginTop:'10px',width:'100%',padding:'12px',borderRadius:'9px',border:'none',background:S.analyzing?'#C8D0DC':C.navy,color:S.analyzing?'#7A8FA8':'#fff',fontSize:'13px',cursor:S.analyzing?'default':'pointer',fontWeight:'bold',fontFamily:'inherit'}},S.analyzing?'Analyserer...':'🤖 Analyser samtale');
+  abtn.onclick=analyser;card.appendChild(abtn);
+  w.appendChild(card);
+  if(S.convResult&&!S.analyzing)w.appendChild(renderResultat(p));
+  return w;
+}
+
+function renderLydTab(p){
+  const w=div({});
+  const card=div({className:'card'});
+  card.appendChild(div({className:'section-lbl'},'Last opp taleopptak'));
+  const zone=div({className:'upload-zone'});
+  const lydInp=inp({type:'file',accept:'audio/*,.m4a,.mp3,.wav,.aac'});
+  lydInp.style.display='none';
+  function oppdaterZone(){
+    zone.innerHTML='';
+    if(S.lydFil){
+      zone.style.borderColor='#0B2265';zone.style.borderStyle='solid';
+      zone.appendChild(div({style:{fontSize:'32px',marginBottom:'8px'}},'🎙️'));
+      zone.appendChild(div({style:{fontSize:'14px',fontWeight:'bold',color:'#0B2265',marginBottom:'4px'}},S.lydNavn));
+      zone.appendChild(div({style:{fontSize:'12px',color:'#7A8FA8'}},'Klikk for å bytte fil'));
+    } else {
+      zone.appendChild(div({style:{fontSize:'32px',marginBottom:'8px'}},'⬆️'));
+      zone.appendChild(div({style:{fontSize:'14px',fontWeight:'bold',color:'#0B1F3A',marginBottom:'4px'}},'Slipp lydfil her eller klikk for å velge'));
+      zone.appendChild(div({style:{fontSize:'12px',color:'#7A8FA8'}},'.m4a · .mp3 · .wav · fra Taleopptak-appen'));
+    }
+    zone.appendChild(lydInp);
+  }
+  lydInp.onchange=e=>{const f=e.target.files[0];if(!f)return;S.lydFil=f;S.lydNavn=f.name;oppdaterZone();};
+  zone.onclick=()=>lydInp.click();
+  zone.ondragover=e=>{e.preventDefault();zone.style.borderColor='#C9A84C';};
+  zone.ondragleave=()=>{zone.style.borderColor=S.lydFil?'#0B2265':'#C8D0DC';};
+  zone.ondrop=e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(f){S.lydFil=f;S.lydNavn=f.name;oppdaterZone();}};
+  oppdaterZone();card.appendChild(zone);
+  if(!S.apiKey)card.appendChild(div({className:'alert alert-red'},'⚠️ Ingen API-nøkkel. Klikk ⚙️.'));
+  if(S.transkFeil)card.appendChild(div({className:'alert alert-red'},'⚠️ '+S.transkFeil));
+  const tbtn=btn({style:{width:'100%',padding:'12px',borderRadius:'9px',border:'none',background:(S.transkriberer||!S.lydFil||!S.apiKey)?'#C8D0DC':'#0B2265',color:(S.transkriberer||!S.lydFil||!S.apiKey)?'#7A8FA8':'#fff',fontSize:'13px',cursor:(S.transkriberer||!S.lydFil||!S.apiKey)?'default':'pointer',fontWeight:'bold',fontFamily:'inherit'}},S.transkriberer?'Transkriberer...':'🎙️ Transkriber og analyser');
+  tbtn.onclick=transkriber;card.appendChild(tbtn);
+  card.appendChild(div({style:{fontSize:'11px',color:'#7A8FA8',marginTop:'6px',textAlign:'center'}},'Groq Whisper · Norsk · Automatisk analyse etterpå'));
+  w.appendChild(card);
+  if(S.convResult&&!S.analyzing)w.appendChild(renderResultat(p));
+  return w;
+}
+
+async function analyser(){
+  if(S.analyzing)return;
+  if(!S.analyseTekst?.trim()||!S.apiKey){setState({convFeil:'Fyll inn transkripsjon og API-nøkkel.'});return;}
+  setState({analyzing:true,convFeil:'',convResult:null});
+  try{
+    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+S.apiKey},
+      body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:2000,temperature:0.1,
+        messages:[{role:'system',content:SYSTEM_PROMPT},{role:'user',content:'Spiller: '+S.selected.navn+', '+S.selected.alder+' år, '+S.selected.posisjon+'.\n\nSamtale:\n'+S.analyseTekst}]})
+    });
+    const json=await res.json();
+    if(json.error)throw new Error(json.error.message||String(json.error));
+    const raw=json.choices?.[0]?.message?.content||'';
+    const s=raw.indexOf('{'),e=raw.lastIndexOf('}');
+    if(s===-1||e===-1)throw new Error('Ingen JSON i svaret. Prøv igjen med lengre transkripsjon.');
+    let parsed;
+    try{parsed=JSON.parse(raw.slice(s,e+1).replace(/\r/g,'').replace(/\t/g,' '));}
+    catch(pe){throw new Error('Svaret var ikke gyldig JSON. Prøv igjen.');}
+    setState({convResult:parsed,analyzing:false});
+  }catch(err){setState({analyzing:false,convFeil:err.message});}
+}
+
+async function transkriber(){
+  if(S.transkriberer||!S.lydFil||!S.apiKey)return;
+  setState({transkriberer:true,transkFeil:'',convResult:null,convFeil:''});
+  try{
+    const buf=await S.lydFil.arrayBuffer();
+    const blob=new Blob([buf],{type:S.lydFil.type||'audio/m4a'});
+    const fd=new FormData();fd.append('file',blob,S.lydFil.name);fd.append('model','whisper-large-v3-turbo');fd.append('language','no');fd.append('response_format','text');
+    const res=await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{method:'POST',headers:{'Authorization':'Bearer '+S.apiKey},body:fd});
+    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e?.error?.message||res.statusText);}
+    const tekst=await res.text();
+    if(!tekst?.trim())throw new Error('Tom transkripsjon. Sjekk at lydfilen har norsk tale.');
+    setState({transkriberer:false,analyseTekst:tekst.trim()});
+    await analyser();
+  }catch(err){setState({transkriberer:false,transkFeil:err.message});}
+}
+
+function saveConv(p,ny){
+  const op=[...S.convs,ny];LS.sc(p.id,op);
+  const upP=S.players.map(x=>x.id===p.id?{...x,sist:ny.dato,ant:(x.ant||0)+1}:x);
+  LS.sp(upP);setState({convs:op,players:upP,selected:upP.find(x=>x.id===p.id),view:'player',convResult:null,analyseTekst:'',samtaleNotat:'',samtaleDato:'',samtaleDrøm:'',mal:[]});
+}
+function slettConv(cid){
+  if(!confirm('Slett denne samtalen?'))return;
+  const op=S.convs.filter(c=>c.id!==cid);LS.sc(S.selected.id,op);
+  const upP=S.players.map(x=>x.id===S.selected.id?{...x,ant:Math.max(0,(x.ant||1)-1)}:x);
+  LS.sp(upP);setState({convs:op,players:upP,selected:upP.find(x=>x.id===S.selected.id)});
+}
+
+function openEdit(c){
+  const ef={type:c.type||'Spillersamtale',dato:c.dato||'',notat:c.notat||'',drommeMal:c.drommeMal||'',
+    mal:(c.mal||[]).map(m=>({...m,detaljerMal:m.detaljer?.mal||'',tiltak:(m.detaljer?.tiltak||[]).join('\n'),maling:(m.detaljer?.maling||[]).join('\n')}))};
+  setState({view:'edit-conv',editingConv:c,editForm:ef});
+}
+
+function renderEditConv(){
+  const p=S.selected;if(!p||!S.editingConv)return renderPlayer();
+  const ef=S.editForm;
+  const page=div({className:'page'});const wrap=div({className:'wrap-sm'});page.appendChild(wrap);
+  const bb=btn({className:'btn-back'},'');bb.innerHTML='<span style="font-size:18px">←</span> Avbryt redigering';
+  bb.onclick=()=>setState({view:'player',editingConv:null,editForm:null});wrap.appendChild(bb);
+  const mhdr=div({style:{background:'linear-gradient(135deg,'+C.navy+',#0d2a6e 60%,'+C.blue+')',borderRadius:'16px',padding:'18px 22px',marginBottom:'14px',boxShadow:'0 4px 20px rgba(11,34,101,.2)'}});
+  mhdr.appendChild(div({style:{fontSize:'9px',letterSpacing:'3px',color:C.gold,textTransform:'uppercase',marginBottom:'3px'}},'✏️ Rediger samtale'));
+  mhdr.appendChild(div({style:{fontSize:'18px',fontWeight:'bold',color:'#fff'}},p.navn+' · '+S.editingConv.dato));
+  wrap.appendChild(mhdr);
+  const gc=div({className:'card'});
+  const r=div({className:'form-2col mb12'});
+  const tg=div({});tg.appendChild(div({className:'form-lbl'},'Type samtale'));
+  const ts=document.createElement('select');ts.className='form-select';
+  SAMTALETYPER.forEach(t=>ts.innerHTML+=`<option value="${t.id}"${ef.type===t.id?' selected':''}>${t.ikon} ${t.id}</option>`);
+  ts.onchange=e=>ef.type=e.target.value;tg.appendChild(ts);
+  const dmg=div({});dmg.appendChild(div({className:'form-lbl'},'Drømmemål'));
+  const dmi=inp({className:'form-input',placeholder:'Spillerens drømmemål...',value:ef.drommeMal||''});
+  dmi.oninput=e=>ef.drommeMal=e.target.value;dmg.appendChild(dmi);
+  r.appendChild(tg);r.appendChild(dmg);gc.appendChild(r);
+  gc.appendChild(div({className:'form-lbl'},'Notat'));
+  const ni=txt2({className:'form-textarea',rows:'3'});ni.value=ef.notat||'';ni.oninput=e=>ef.notat=e.target.value;gc.appendChild(ni);
+  wrap.appendChild(gc);
+  wrap.appendChild(div({className:'section-lbl'},'Utviklingsmål'));
+  function buildEditList(){
+    const old=wrap.querySelector('.edit-mal-list');if(old)old.remove();
+    const ml=div({className:'edit-mal-list'});
+    ef.mal.forEach((m,idx)=>{
+      ml.appendChild(renderMalSkjema(m,idx,
+        (k,v)=>{m[k]=v;},
+        ()=>{ef.mal.splice(idx,1);buildEditList();}));
+    });
+    const abtn=btn({style:{width:'100%',padding:'10px',borderRadius:'10px',border:'2px dashed #C8D0DC',background:'transparent',color:'#7A8FA8',fontSize:'13px',cursor:'pointer',marginBottom:'12px',fontFamily:'inherit'}},'+ Legg til mål');
+    abtn.onclick=()=>{ef.mal.push({id:uid(),tittel:'',kortbeskrivelse:'',prioritet:'Høy',kategori:'fotball',spillfase:'',detaljerMal:'',tiltak:'',maling:''});buildEditList();};
+    ml.appendChild(abtn);
+    const sb=btn({style:{width:'100%',padding:'13px',borderRadius:'12px',border:'none',background:C.gold,color:C.navy,fontSize:'15px',cursor:'pointer',fontWeight:'bold',fontFamily:'inherit',boxShadow:'0 4px 16px rgba(201,168,76,.3)'}},'✅ Lagre endringer');
+    sb.onclick=()=>{
+      const op=S.convs.map(c=>c.id===S.editingConv.id?{...c,type:ef.type,dato:ef.dato||c.dato,notat:ef.notat,drommeMal:ef.drommeMal,
+        mal:ef.mal.filter(m=>m.tittel.trim()).map(m=>({...m,detaljer:{mal:m.detaljerMal||'',tiltak:m.tiltak?m.tiltak.split('\n').filter(Boolean):[],maling:m.maling?m.maling.split('\n').filter(Boolean):[]}}))}:c);
+      LS.sc(S.selected.id,op);setState({convs:op,view:'player',editingConv:null,editForm:null});
+    };
+    ml.appendChild(sb);wrap.appendChild(ml);
+  }
+  buildEditList();
+  wrap.appendChild(div({className:'footer'},'STABÆK FOTBALL · G17 · KONFIDENSIELT'));
+  return page;
+}
+
+function renderOppfølging(){
+  const page=div({className:'page'});
+  const wrap=div({className:'wrap'});page.appendChild(wrap);
+
+  // Header
+  wrap.appendChild(renderHeader('Oppfølgingsplan','Systematisk oppfølging av alle spillere'));
+
+  // Nav tabs
+  const navRow=div({style:{display:'flex',gap:'10px',marginBottom:'20px'}});
+  const o1=btn({style:{flex:1,padding:'10px',borderRadius:'10px',border:'2px solid #C8D0DC',background:'#fff',color:C.navy,fontSize:'13px',cursor:'pointer',fontWeight:'bold',fontFamily:'inherit'}},'👥 Oversikt');
+  o1.onclick=()=>setState({view:'overview'});
+  const o2=btn({style:{flex:1,padding:'10px',borderRadius:'10px',border:'2px solid '+C.navy,background:C.navy,color:'#fff',fontSize:'13px',cursor:'pointer',fontWeight:'bold',fontFamily:'inherit'}},'📅 Oppfølgingsplan');
+  navRow.appendChild(o1);navRow.appendChild(o2);wrap.appendChild(navRow);
+
+  if(!S.players.length){
+    const em=div({className:'empty'});em.appendChild(div({className:'empty-ikon'},'📅'));
+    em.appendChild(el('h3',{},'Ingen spillere registrert'));
+    em.appendChild(el('p',{},'Legg til spillere i Oversikten for å planlegge oppfølging.'));
+    wrap.appendChild(em);return page;
+  }
+
+  // Legend
+  const leg=div({style:{display:'flex',gap:'16px',marginBottom:'16px',padding:'12px 16px',background:'#fff',borderRadius:'12px',boxShadow:'0 2px 8px rgba(11,34,101,.06)',flexWrap:'wrap'}});
+  [{dot:'#27ae60',lbl:'Innenfor plan'},{dot:'#f39c12',lbl:'Forfaller snart (≤3 dager)'},{dot:'#e74c3c',lbl:'Forfalt / Ikke gjennomført'}].forEach(l=>{
+    const li=div({style:{display:'flex',alignItems:'center',gap:6}});
+    const d=div({style:{width:10,height:10,borderRadius:'50%',background:l.dot,flexShrink:0}});
+    li.appendChild(d);li.appendChild(document.createTextNode(l.lbl));li.style.fontSize='12px';li.style.color=C.text;
+    leg.appendChild(li);
+  });
+  wrap.appendChild(leg);
+
+  // Regler-beskrivelse
+  const rb=div({style:{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'10px',marginBottom:'20px'}});
+  OPPFØLGING_REGLER.forEach(r=>{
+    const rc=div({style:{background:'#fff',borderRadius:'12px',padding:'14px 16px',boxShadow:'0 2px 10px rgba(11,34,101,.06)',borderTop:'3px solid '+r.farge}});
+    rc.appendChild(div({style:{fontSize:'20px',marginBottom:'6px'}},r.ikon));
+    rc.appendChild(div({style:{fontSize:'13px',fontWeight:'bold',color:C.text,marginBottom:'3px'}},r.lbl));
+    rc.appendChild(div({style:{fontSize:'11px',color:C.grey,marginBottom:'6px'}},r.sub));
+    rc.appendChild(div({style:{fontSize:'10px',color:r.farge,fontWeight:'bold',letterSpacing:'1px',textTransform:'uppercase'}},'Hvert '+(r.intervall===14?'14. dag (2 uker)':'42. dag (6 uker)')));
+    rb.appendChild(rc);
+  });
+  wrap.appendChild(rb);
+
+  // Beregn total oversikt
+  const rød=[];const gul=[];const grønn=[];
+  S.players.forEach(p=>{
+    const convs=LS.gc(p.id);
+    const statuser=OPPFØLGING_REGLER.map(r=>oppfølgingStatus(convs,r.type,r.intervall));
+    const verste=statuser.find(s=>s.status==='aldri')||statuser.find(s=>s.status==='forfalt')||statuser.find(s=>s.status==='snart');
+    if(verste?.status==='aldri'||verste?.status==='forfalt')rød.push({p,convs,statuser});
+    else if(verste?.status==='snart')gul.push({p,convs,statuser});
+    else grønn.push({p,convs,statuser});
+  });
+
+  // Summary badges
+  const sumRow=div({style:{display:'flex',gap:'10px',marginBottom:'20px'}});
+  [{ant:rød.length,lbl:'Krever oppfølging',farge:'#e74c3c',bg:'rgba(231,76,60,.08)'},{ant:gul.length,lbl:'Forfaller snart',farge:'#f39c12',bg:'rgba(243,156,18,.08)'},{ant:grønn.length,lbl:'I rute',farge:'#27ae60',bg:'rgba(39,174,96,.08)'}].forEach(s=>{
+    const sb=div({style:{flex:1,padding:'12px',borderRadius:'12px',background:s.bg,border:'1px solid '+s.farge+'44',textAlign:'center'}});
+    sb.appendChild(div({style:{fontSize:'28px',fontWeight:'bold',color:s.farge}},String(s.ant)));
+    sb.appendChild(div({style:{fontSize:'11px',color:s.farge,letterSpacing:'1px',textTransform:'uppercase'}},s.lbl));
+    sumRow.appendChild(sb);
+  });
+  wrap.appendChild(sumRow);
+
+  // Spillertabell
+  function renderSpillerRad(p,convs,statuser){
+    const g=gruppeFor(p.posisjon);
+    const row=div({style:{background:'#fff',borderRadius:'12px',padding:'14px 16px',marginBottom:'10px',boxShadow:'0 2px 10px rgba(11,34,101,.06)',display:'flex',alignItems:'center',gap:'12px',flexWrap:'wrap',cursor:'pointer'}});
+    row.onmouseenter=()=>{row.style.boxShadow='0 4px 16px rgba(11,34,101,.12)';};
+    row.onmouseleave=()=>{row.style.boxShadow='0 2px 10px rgba(11,34,101,.06)';};
+    row.onclick=()=>setState({selected:p,convs,view:'player',expandedConv:null});
+
+    // Avatar + info
+    const av=div({style:{width:38,height:38,borderRadius:'50%',background:'linear-gradient(135deg,'+C.navy+','+C.blue+')',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'14px',fontWeight:'bold',color:C.gold,flexShrink:0}});av.textContent=p.navn.charAt(0);
+    const info=div({style:{minWidth:'140px',flexShrink:0}});
+    info.appendChild(div({style:{fontSize:'14px',fontWeight:'bold',color:C.text,marginBottom:'2px'}},p.navn));
+    info.appendChild(div({style:{fontSize:'11px',color:C.grey}},p.posisjon));
+
+    // Status per oppfølgingstype
+    const statCol=div({style:{flex:1,display:'flex',gap:'8px',flexWrap:'wrap',minWidth:'200px'}});
+    OPPFØLGING_REGLER.forEach((r,i)=>{
+      const st=statuser[i];
+      const sc=div({style:{display:'flex',flexDirection:'column',gap:'3px',minWidth:'90px'}});
+      const badge=div({style:{display:'inline-flex',alignItems:'center',gap:'4px',padding:'4px 8px',borderRadius:'20px',background:st.dot+'14',border:'1px solid '+st.dot+'44'}});
+      const dot=div({style:{width:7,height:7,borderRadius:'50%',background:st.dot,flexShrink:0}});
+      badge.appendChild(dot);badge.appendChild(document.createTextNode(r.ikon+' '+r.kort));
+      badge.style.fontSize='10px';badge.style.color=st.dot;badge.style.fontWeight='bold';
+      sc.appendChild(badge);
+      const sub=div({style:{fontSize:'10px',color:C.grey,paddingLeft:'4px'}});
+      sub.textContent=st.txt;
+      // Progress bar
+      const pb=div({style:{height:'3px',borderRadius:'2px',background:'#F2F4F8',overflow:'hidden',marginTop:'2px'}});
+      const pf=div({style:{height:'100%',width:st.pst+'%',background:st.dot,borderRadius:'2px',transition:'width .4s'}});
+      pb.appendChild(pf);
+      sc.appendChild(sub);sc.appendChild(pb);
+      statCol.appendChild(sc);
+    });
+
+    const chev=div({style:{fontSize:'15px',color:C.gold,opacity:.4,flexShrink:0}});chev.textContent='›';
+    row.appendChild(av);row.appendChild(info);row.appendChild(statCol);row.appendChild(chev);
+    return row;
+  }
+
+  // Render grupper
+  [[rød,'🔴 Krever oppfølging','#e74c3c'],[gul,'🟡 Forfaller snart','#f39c12'],[grønn,'🟢 I rute','#27ae60']].forEach(([liste,tittel,farge])=>{
+    if(!liste.length)return;
+    const gh=div({style:{display:'flex',alignItems:'center',gap:'10px',marginBottom:'10px'}});
+    gh.appendChild(div({style:{fontSize:'14px',fontWeight:'bold',color:C.text}},tittel));
+    gh.appendChild(div({style:{fontSize:'12px',color:C.grey}},'· '+liste.length+' spiller'+(liste.length!==1?'e':'')));
+    gh.appendChild(div({style:{height:'1px',flex:'1',background:C.greyLight}}));
+    wrap.appendChild(gh);
+    liste.forEach(({p,convs,statuser})=>wrap.appendChild(renderSpillerRad(p,convs,statuser)));
+    wrap.appendChild(div({style:{marginBottom:'16px'}}));
+  });
+
+  // Neste 14 dager – kompakt kalendervisning
+  const kalHdr=div({style:{fontSize:'10px',color:C.gold,letterSpacing:'2px',textTransform:'uppercase',marginBottom:'12px'}});
+  kalHdr.textContent='📆 Neste 14 dager – hva skal gjøres';
+  wrap.appendChild(kalHdr);
+  const kalGrid=div({style:{background:'#fff',borderRadius:'14px',padding:'16px',boxShadow:'0 2px 14px rgba(11,34,101,.07)'}});
+  const fremover=[];
+  S.players.forEach(p=>{
+    const convs=LS.gc(p.id);
+    OPPFØLGING_REGLER.forEach(r=>{
+      const st=oppfølgingStatus(convs,r.type,r.intervall);
+      if(st.status==='ok'&&st.dager<=14){
+        fremover.push({p,r,st,dager:st.dager});
+      } else if(st.status==='forfalt'||st.status==='aldri'){
+        fremover.push({p,r,st,dager:-1*(st.dager||99)});
+      }
+    });
+  });
+  fremover.sort((a,b)=>a.dager-b.dager);
+  if(!fremover.length){
+    kalGrid.appendChild(div({style:{fontSize:'13px',color:C.grey,textAlign:'center',padding:'16px 0'}},'Alle spillere er i rute – bra jobbet! 🎉'));
+  } else {
+    fremover.slice(0,12).forEach(({p,r,st})=>{
+      const ki=div({style:{display:'flex',alignItems:'center',gap:'10px',padding:'8px 0',borderBottom:'1px solid '+C.greyLight}});
+      const dot=div({style:{width:8,height:8,borderRadius:'50%',background:st.dot,flexShrink:0}});
+      ki.appendChild(dot);
+      ki.appendChild(div({style:{fontSize:'12px',fontWeight:'bold',color:C.text,minWidth:'120px'}},p.navn));
+      const tb=div({style:{padding:'2px 8px',borderRadius:'20px',background:r.farge+'18',border:'1px solid '+r.farge+'44',fontSize:'10px',color:r.farge}});
+      tb.textContent=r.ikon+' '+r.lbl;ki.appendChild(tb);
+      ki.appendChild(div({style:{flex:'1'}}));
+      ki.appendChild(div({style:{fontSize:'11px',color:st.dot,fontWeight:'bold'}},st.txt));
+      const regBtn=btn({style:{padding:'4px 10px',borderRadius:'7px',border:'none',background:C.gold,color:C.navy,fontSize:'11px',cursor:'pointer',fontWeight:'bold',fontFamily:'inherit'}},'+ Registrer');
+      regBtn.onclick=e=>{e.stopPropagation();setState({selected:p,convs:LS.gc(p.id),view:'new-conv',convTab:'manuell',samtaleType:r.type,convResult:null,convFeil:'',samtaleNotat:'',samtaleDato:'',samtaleDrøm:'',mal:[]});};
+      ki.appendChild(regBtn);
+      kalGrid.appendChild(ki);
+    });
+  }
+  wrap.appendChild(kalGrid);
+  wrap.appendChild(div({className:'footer',style:{marginTop:'20px'}},'STABÆK FOTBALL · G17 · KONFIDENSIELT'));
+  return page;
+}
+
+// ── Kalender-hjelper ──────────────────────────────────────────────────────────
+function mandagForUke(offset){
+  const d=new Date();
+  const day=d.getDay();
+  const diff=d.getDate()-(day===0?6:day-1)+(offset*7);
+  return new Date(d.setDate(diff));
+}
+function datoStr(d){return d.getDate()+'.'+(d.getMonth()+1)+'.'+d.getFullYear();}
+function datoStrKort(d){return d.getDate()+'.'+(d.getMonth()+1);}
+function erIdag(d){const i=new Date();return d.getDate()===i.getDate()&&d.getMonth()===i.getMonth()&&d.getFullYear()===i.getFullYear();}
+
+function genererUkesplan(mandag){
+  const todo=[];
+  S.players.forEach(p=>{
+    const convs=LS.gc(p.id);
+    OPPFØLGING_REGLER.forEach(r=>{
+      const st=oppfølgingStatus(convs,r.type,r.intervall);
+      if(st.status==='aldri'||st.status==='forfalt'||st.status==='snart'||(st.status==='ok'&&st.dager<=14)){
+        const hastegrad=st.status==='aldri'?-999:st.status==='forfalt'?-st.dager:st.dager;
+        todo.push({p,r,st,hastegrad});
+      }
+    });
+  });
+  todo.sort((a,b)=>a.hastegrad-b.hastegrad);
+
+  // Tir(1)=3, Tor(3)=3, Fre(4)=1
+  const dagMaks=[0,3,0,3,1];
+  const plan=[[],[],[],[],[]];
+  const dagPref={
+    'Spillersamtale':[3,4,1],   // Tor helst – gir ro til grundig samtale
+    'Videosamtale':  [1,3],     // Tir – naturlig på treningsdag
+    'Innsjekk':      [3,1],     // Tor – kort, etter trening
+    'Kampgjennomgang':[1,3],
+    'Treningssamtale':[1,3,4],
+  };
+  // KRITISK: Spor hvilke dager hver spiller allerede er satt opp
+  const spillerDager={};
+
+  todo.forEach(item=>{
+    const pid=item.p.id;
+    const booked=spillerDager[pid]||[];
+    const pref=dagPref[item.r.type]||[1,3];
+    let plassert=false;
+    // Prøv foretrukne dager først
+    for(const di of pref){
+      if(plan[di].length<dagMaks[di]&&!booked.includes(di)){
+        plan[di].push(item);
+        spillerDager[pid]=[...booked,di];
+        plassert=true;break;
+      }
+    }
+    // Fallback: alle tilgjengelige dager
+    if(!plassert){
+      for(const di of[1,3,4]){
+        if(plan[di].length<dagMaks[di]&&!booked.includes(di)){
+          plan[di].push(item);spillerDager[pid]=[...(spillerDager[pid]||[]),di];break;
+        }
+      }
+    }
+  });
+  return plan;
+}
+
+
+function renderKalender(){
+  const page=div({className:'page'});const wrap=div({className:'wrap'});page.appendChild(wrap);
+  wrap.appendChild(renderHeader('Oppfølgingsplan','Systematisk oppfølging av alle spillere'));
+
+  // Nav tabs
+  const navRow=div({style:{display:'flex',gap:'10px',marginBottom:'20px'}});
+  [{lbl:'👥 Oversikt',v:'overview'},{lbl:'📅 Oppfølgingsplan',v:'oppfølging'},{lbl:'🗓️ Kalender',v:'kalender'}].forEach(t=>{
+    const tb=btn({style:{flex:1,padding:'10px',borderRadius:'10px',border:S.view===t.v?'2px solid '+C.navy:'2px solid #C8D0DC',background:S.view===t.v?C.navy:'#fff',color:S.view===t.v?'#fff':C.navy,fontSize:'12px',cursor:'pointer',fontWeight:'bold',fontFamily:'inherit'}},t.lbl);
+    tb.onclick=()=>setState({view:t.v});navRow.appendChild(tb);
+  });
+  wrap.appendChild(navRow);
+
+  const mandag=mandagForUke(S.kalUke);
+  const dager=['Man','Tir','Ons','Tor','Fre'];
+
+  // Kalender-navigasjon
+  const nav=div({className:'kal-nav'});
+  const prevBtn=btn({className:'kal-nav-btn'},'← Forrige uke');prevBtn.onclick=()=>setState({kalUke:S.kalUke-1});
+  const nextBtn=btn({className:'kal-nav-btn'},'Neste uke →');nextBtn.onclick=()=>setState({kalUke:S.kalUke+1});
+  const tittel=div({className:'kal-nav-tittel'});
+  const fredag=new Date(mandag);fredag.setDate(mandag.getDate()+4);
+  tittel.textContent='Uke – '+datoStrKort(mandag)+' til '+datoStrKort(fredag);
+  if(S.kalUke===0){const idag=div({style:{fontSize:'11px',color:C.gold,marginTop:'2px',textAlign:'center'}});idag.textContent='Denne uken';tittel.appendChild(idag);}
+  const tRow=div({style:{textAlign:'center'}});tRow.appendChild(tittel);
+  nav.appendChild(prevBtn);nav.appendChild(tRow);nav.appendChild(nextBtn);
+  wrap.appendChild(nav);
+
+  // Type-forklaring
+  const typRad=div({style:{display:'flex',gap:'8px',flexWrap:'wrap',marginBottom:'14px'}});
+  OPPFØLGING_REGLER.forEach(r=>{
+    const t=div({style:{display:'inline-flex',alignItems:'center',gap:'5px',padding:'4px 10px',borderRadius:'20px',background:r.farge+'14',border:'1px solid '+r.farge+'44',fontSize:'11px',color:r.farge}});
+    t.textContent=r.ikon+' '+r.lbl+' ('+r.intervall+' dager)';typRad.appendChild(t);
+  });
+  wrap.appendChild(typRad);
+
+  // Auto-fordeling
+  const plan=genererUkesplan(mandag);
+
+  // Kalender-grid
+  const grid=div({className:'kal-grid'});
+  dager.forEach((dag,di)=>{
+    const dato=new Date(mandag);dato.setDate(mandag.getDate()+di);
+    const idag=erIdag(dato);
+    const erTilgjengelig=[false,true,false,true,true][di]; // Tir, Tor, Fre
+    const erSporadisk=di===4;
+    const kol=div({className:'kal-dag'+(idag?' harIdag':'')});
+    if(!erTilgjengelig)kol.style.cssText+='opacity:0.35;pointer-events:none;';
+    kol.appendChild(div({className:'kal-dag-hdr'},dag));
+    const datoBoks=div({style:{display:'flex',alignItems:'center',gap:'5px',marginBottom:'8px'}});
+    datoBoks.appendChild(div({className:'kal-dag-dato',style:{marginBottom:'0'}},datoStrKort(dato)));
+    if(erSporadisk){const sp=div({style:{fontSize:'9px',color:C.gold,background:'rgba(201,168,76,.15)',padding:'1px 5px',borderRadius:'4px'}});sp.textContent='sporadisk';datoBoks.appendChild(sp);}
+    if(!erTilgjengelig){const uav=div({style:{fontSize:'9px',color:'#C8D0DC'}});uav.textContent='ikke tilgjengelig';datoBoks.appendChild(uav);}
+    kol.appendChild(datoBoks);
+    if(erTilgjengelig&&!plan[di].length){kol.appendChild(div({className:'kal-tom'},'Ingen avtaler'));}
+    else if(!erTilgjengelig){kol.appendChild(div({className:'kal-tom'},'–'));}
+    else{
+      plan[di].forEach(({p,r,st})=>{
+        const item=div({className:'kal-item',style:{background:r.farge+'12',border:'1px solid '+r.farge+'33'}});
+        item.title=p.navn+' – '+r.lbl;
+        const dot=div({className:'kal-item-dot',style:{background:st.dot}});
+        const txt=div({className:'kal-item-txt',style:{color:C.text}});txt.textContent=p.navn.split(' ')[0];
+        const badge=div({style:{fontSize:'13px',flexShrink:0}});badge.textContent=r.ikon;
+        item.appendChild(dot);item.appendChild(txt);item.appendChild(badge);
+        item.onclick=()=>setState({selected:p,convs:LS.gc(p.id),view:'new-conv',convTab:'manuell',samtaleType:r.type,convResult:null,convFeil:'',samtaleNotat:'',samtaleDato:datoStr(dato),samtaleDrøm:'',mal:[]});
+        kol.appendChild(item);
+      });
+    }
+    grid.appendChild(kol);
+  });
+  wrap.appendChild(grid);
+
+  // Hint om logikk
+  const hint=div({style:{background:'rgba(201,168,76,.07)',borderRadius:'12px',padding:'14px 18px',marginBottom:'16px',borderLeft:'3px solid '+C.gold}});
+  hint.appendChild(div({style:{fontSize:'10px',color:C.gold,letterSpacing:'2px',textTransform:'uppercase',marginBottom:'8px'}},'💡 Anbefalt ukesstruktur for 6 spillere'));
+  const hinttxt=document.createElement('p');
+  hinttxt.style.cssText='font-size:13px;color:'+C.text+';line-height:1.8;margin:0';
+  hinttxt.textContent='Tirsdag: Videosamtale med Gruppe A eller B (3 spillere, annenhver uke) • Torsdag: Spillersamtale med 1 spiller (rullerer) + Innsjekk med motsatt gruppe – aldri samme spiller begge samtaler. Fredag (sporadisk): Spillersamtale. Ca. 45 min per økt, alle spillere i rute over 6 uker.';
+  hint.appendChild(hinttxt);wrap.appendChild(hint);
+
+  // Ukesrytme-visualisering over 6 uker
+  const rytHdr=div({style:{fontSize:'10px',color:C.gold,letterSpacing:'2px',textTransform:'uppercase',marginBottom:'12px'}});
+  rytHdr.textContent='📊 6-ukers syklus – fordeling av samtaler';
+  wrap.appendChild(rytHdr);
+  const rytGrid=div({style:{display:'grid',gridTemplateColumns:'60px repeat(6,1fr)',gap:'4px',marginBottom:'20px',fontSize:'11px'}});
+  // Bygger smart 6-ukers plan per spiller
+  // Gruppe A = spillere 0,1,2 | Gruppe B = spillere 3,4,5
+  const alle=S.players.slice(0,6);
+  const grpA=alle.filter((_,i)=>i%2===0).map(p=>p.navn.split(' ')[0]);
+  const grpB=alle.filter((_,i)=>i%2!==0).map(p=>p.navn.split(' ')[0]);
+  const spillerNavn=alle.map(p=>p.navn.split(' ')[0]);
+
+  // Ukeoverskrift
+  const ud0=div({style:{padding:'6px 4px'}});ud0.textContent='';rytGrid.appendChild(ud0);
+  ['Uke 1','Uke 2','Uke 3','Uke 4','Uke 5','Uke 6'].forEach(u=>{
+    const ud=div({style:{textAlign:'center',fontWeight:'bold',color:C.text,padding:'6px 4px',background:'#fff',borderRadius:'8px',fontSize:'10px',lineHeight:'1.3'}});ud.textContent=u;rytGrid.appendChild(ud);
+  });
+
+  // Regler
+  const planData={
+    'Spillersamtale': {dag:'Tor', uker: spillerNavn.map((n,i)=>n||'–')}, // 1 spiller per uke på Tor
+    'Videosamtale':   {dag:'Tir', uker: ['Gr.A','Gr.B','Gr.A','Gr.B','Gr.A','Gr.B']}, // 3 spillere annenhver uke
+    'Innsjekk':       {dag:'Tor', uker: ['Gr.B','Gr.A','Gr.B','Gr.A','Gr.B','Gr.A']}, // Motsatt gruppe av Video
+  };
+
+  OPPFØLGING_REGLER.forEach(r=>{
+    const pd=planData[r.type];
+    const rl=div({style:{display:'flex',flexDirection:'column',padding:'4px 0',fontSize:'10px',color:r.farge,fontWeight:'bold',gap:'2px'}});
+    rl.appendChild(div({style:{color:r.farge}},r.ikon+' '+r.kort));
+    if(pd)rl.appendChild(div({style:{fontSize:'9px',color:C.grey,fontWeight:'normal'}},pd.dag));
+    rytGrid.appendChild(rl);
+
+    for(let u=0;u<6;u++){
+      const cell=div({style:{textAlign:'center',padding:'4px 3px',borderRadius:'6px',background:r.farge+'12',border:'1px solid '+r.farge+'22',fontSize:'10px',color:r.farge,lineHeight:'1.4'}});
+      if(!pd){cell.textContent='–';cell.style.opacity='0.3';rytGrid.appendChild(cell);continue;}
+
+      if(r.type==='Spillersamtale'){
+        cell.textContent=spillerNavn[u]||'–';
+        cell.title='Torsdag uke '+(u+1)+': Spillersamtale med '+(spillerNavn[u]||'?');
+      } else {
+        const gruppeNavn=pd.uker[u];
+        const erA=gruppeNavn==='Gr.A';
+        const navnListe=erA?grpA:grpB;
+        cell.style.fontSize='9px';
+        cell.style.lineHeight='1.5';
+        cell.innerHTML=navnListe.slice(0,3).join('<br>')||'–';
+        cell.title=(pd.dag+' uke '+(u+1)+': '+r.lbl+' med '+navnListe.join(', '));
+      }
+      rytGrid.appendChild(cell);
+    }
+  });
+
+  // Forklaringsboks
+  if(grpA.length||grpB.length){
+    const fbox=div({style:{gridColumn:'1/-1',background:'rgba(201,168,76,.06)',borderRadius:'8px',padding:'10px 12px',fontSize:'11px',color:C.grey,lineHeight:'1.8',marginTop:'6px'}});
+    fbox.textContent='Gruppe A: '+(grpA.join(', ')||'–')+' · Gruppe B: '+(grpB.join(', ')||'–')+' · Video og innsjekk alternerer mellom gruppene slik at ingen spiller har to samtaler samme dag.';
+    rytGrid.appendChild(fbox);
+  }
+  wrap.appendChild(rytGrid);
+
+  // Hvem mangler hva totalt
+  const manglerHdr=div({style:{fontSize:'10px',color:C.gold,letterSpacing:'2px',textTransform:'uppercase',marginBottom:'10px'}});
+  manglerHdr.textContent='⚠️ Mangler oppfølging';wrap.appendChild(manglerHdr);
+  const manglerWrap=div({style:{background:'#fff',borderRadius:'14px',padding:'16px',boxShadow:'0 2px 14px rgba(11,34,101,.07)',marginBottom:'16px'}});
+  let ingenMangler=true;
+  S.players.forEach(p=>{
+    const convs=LS.gc(p.id);
+    const forfalt=OPPFØLGING_REGLER.filter(r=>{const st=oppfølgingStatus(convs,r.type,r.intervall);return st.status==='forfalt'||st.status==='aldri';});
+    if(!forfalt.length)return;
+    ingenMangler=false;
+    const mrow=div({style:{display:'flex',alignItems:'center',gap:'10px',padding:'8px 0',borderBottom:'1px solid '+C.greyLight,cursor:'pointer'}});
+    mrow.onclick=()=>setState({selected:p,convs,view:'player',expandedConv:null});
+    const av=div({style:{width:28,height:28,borderRadius:'50%',background:'linear-gradient(135deg,'+C.navy+','+C.blue+')',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'11px',fontWeight:'bold',color:C.gold,flexShrink:0}});av.textContent=p.navn.charAt(0);
+    const nm=div({style:{fontSize:'13px',fontWeight:'bold',color:C.text,flex:'1'}});nm.textContent=p.navn;
+    mrow.appendChild(av);mrow.appendChild(nm);
+    forfalt.forEach(r=>{
+      const b=div({style:{padding:'2px 8px',borderRadius:'20px',background:r.farge+'14',border:'1px solid '+r.farge+'44',fontSize:'10px',color:r.farge}});
+      b.textContent=r.ikon+' '+r.kort;mrow.appendChild(b);
+    });
+    manglerWrap.appendChild(mrow);
+  });
+  if(ingenMangler){const ok=div({style:{fontSize:'13px',color:'#27ae60',textAlign:'center',padding:'12px 0'}});ok.textContent='✅ Alle spillere er i rute – utmerket!';manglerWrap.appendChild(ok);}
+  wrap.appendChild(manglerWrap);
+  wrap.appendChild(div({className:'footer'},'STABÆK FOTBALL · G17 · KONFIDENSIELT'));
+  return page;
+}
+
+const TREND_PROMPT=`Du er en spillerutviklingsanalytiker for Stabæk Fotball G17. Du får en kronologisk liste over alle samtaler med en spiller.
+
+Analyser samtalene og returner KUN dette JSON-objektet:
+{
+  "trender": ["tema1","tema2"],
+  "fremgang": ["mål eller område som viser fremgang"],
+  "utfordringer": ["vedvarende utfordringer i 2+ samtaler"],
+  "nyeEmner": ["emner som dukket opp siste samtale(r) men ikke tidligere"],
+  "anbefaling": "Én konkret setning om hva trener bør fokusere på neste samtale",
+  "oppsummering": "2–3 setninger om spillerens utvikling sett under ett"
+}
+
+Basér alt på det som faktisk er dokumentert i samtalene. Ikke finn på.`;
+
+function byggSamtaleHistorikk(p,convs){
+  if(!convs.length)return'Ingen samtaler registrert.';
+  return convs.map(function(c,i){
+    var malTekst=(c.mal||[]).map(function(m){
+      var t='- '+m.tittel+(m.spillfase?' ('+m.spillfase+')':'')+' ['+m.prioritet+', '+(m.kategori||'fotball')+']';
+      if(m.kortbeskrivelse)t+=': '+m.kortbeskrivelse;
+      return t;
+    }).join('; ');
+    return 'Samtale '+(i+1)+' ('+c.dato+') - '+(c.type||'Spillersamtale')+': '+(c.notat?'Notat: '+c.notat+'. ':'')+''+(malTekst||'Ingen mal.');
+  }).join(' ||| ');
+}
+
+
+function renderTrender(){
+  var p=S.selected;if(!p)return renderPlayer();
+  var convs=S.convs;
+  var page=div({className:'page'});var wrap=div({className:'wrap-sm'});page.appendChild(wrap);
+  var bb=btn({className:'btn-back'},'');bb.innerHTML='<span style="font-size:18px">&#8592;</span> '+p.navn;
+  bb.onclick=function(){setState({view:'player'});};wrap.appendChild(bb);
+
+  // Header
+  var mhdr=div({style:{background:'linear-gradient(135deg,#5b2c8c,#8e44ad)',borderRadius:'16px',padding:'18px 22px',marginBottom:'16px',boxShadow:'0 4px 20px rgba(91,44,140,.25)'}});
+  mhdr.appendChild(div({style:{fontSize:'9px',letterSpacing:'3px',color:'rgba(255,255,255,.7)',textTransform:'uppercase',marginBottom:'3px'}},'Trender og innsikter'));
+  mhdr.appendChild(div({style:{fontSize:'18px',fontWeight:'bold',color:'#fff'}},p.navn));
+  mhdr.appendChild(div({style:{fontSize:'12px',color:'rgba(255,255,255,.7)',marginTop:'2px'}},convs.length+' samtaler · '+gruppeFor(p.posisjon).ikon+' '+p.posisjon));
+  wrap.appendChild(mhdr);
+
+  if(!convs.length){
+    var em=div({className:'empty'});em.appendChild(div({className:'empty-ikon'},'📈'));
+    em.appendChild(el('h3',{},'Ingen samtaler ennå'));
+    em.appendChild(el('p',{},'Registrer minst 2 samtaler for å se trender.'));
+    wrap.appendChild(em);return page;
+  }
+
+  // ── 1. AI-ANALYSE – HOVEDELEMENTET ─────────────────────────────────────────
+  var aiSeksjon=div({style:{marginBottom:'20px'}});
+  var aiHdr=div({style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'10px'}});
+  var aiTittel=div({style:{fontSize:'10px',color:'#8e44ad',letterSpacing:'2px',textTransform:'uppercase'}});
+  aiTittel.textContent='🤖 AI-analyse av samtalehistorikk';
+  aiHdr.appendChild(aiTittel);
+  aiSeksjon.appendChild(aiHdr);
+
+  if(S.trenderAnalyse){
+    var a=typeof S.trenderAnalyse==='string'?parseAnalyse(S.trenderAnalyse):S.trenderAnalyse;
+
+    // Sjekk om vi har strukturert JSON eller ren tekst
+    if(a.tekst){
+      // ── Ren tekst-modus: vis pent formatert ────────────────────────────
+      var txtKort=div({style:{background:'#fff',borderRadius:'14px',overflow:'hidden',boxShadow:'0 4px 20px rgba(91,44,140,.12)',marginBottom:'10px'}});
+
+      // Toppstripe
+      var stripe=div({style:{background:'linear-gradient(90deg,#5b2c8c,#8e44ad)',padding:'12px 18px',display:'flex',alignItems:'center',gap:'10px'}});
+      stripe.appendChild(div({style:{fontSize:'18px'}},'🤖'));
+      var sInfo=div({});
+      sInfo.appendChild(div({style:{fontSize:'11px',fontWeight:'bold',color:'rgba(255,255,255,.9)',letterSpacing:'1px',textTransform:'uppercase'}},'AI-analyse'));
+      sInfo.appendChild(div({style:{fontSize:'10px',color:'rgba(255,255,255,.6)'}},'Basert på '+convs.length+' samtaler med '+p.navn));
+      stripe.appendChild(sInfo);txtKort.appendChild(stripe);
+
+      // Tekst-innhold
+      var txtBody=div({style:{padding:'20px 22px'}});
+      var lines=a.tekst.split('\n');
+      var seksjoner=[
+        {søk:'gjentakende', ikon:'🔁', farge:'#e74c3c'},
+        {søk:'positiv',     ikon:'📈', farge:'#27ae60'},
+        {søk:'bekymring',   ikon:'⚠️', farge:'#f39c12'},
+        {søk:'anbefaling',  ikon:'💡', farge:'#1A4B8C'},
+      ];
+      var paragraf='';
+      lines.forEach(function(linje){
+        var ll=linje.toLowerCase().trim();
+        var erSeksjonsHdr=false;
+        seksjoner.forEach(function(s){
+          if(ll.startsWith(s.søk)||ll.indexOf(': ')>-1&&ll.indexOf(s.søk)>-1&&ll.indexOf(s.søk)<20){
+            if(paragraf.trim()){
+              var pt=document.createElement('p');pt.style.cssText='margin:0 0 16px 0;font-size:13px;color:#0B1F3A;line-height:1.85';pt.textContent=paragraf.trim();txtBody.appendChild(pt);paragraf='';
+            }
+            var hdr=div({style:{display:'flex',alignItems:'center',gap:'7px',margin:'0 0 6px 0',paddingTop:'4px'}});
+            var iEl=div({style:{fontSize:'16px',flexShrink:0}});iEl.textContent=s.ikon;
+            var kolon=linje.indexOf(':');
+            var tittel=kolon>-1?linje.slice(0,kolon).replace(/^[0-9.)\s]+/,'').trim():linje.trim();
+            var hTxt=div({style:{fontSize:'12px',fontWeight:'bold',color:s.farge,textTransform:'uppercase',letterSpacing:'1px'}});hTxt.textContent=tittel;
+            hdr.appendChild(iEl);hdr.appendChild(hTxt);txtBody.appendChild(hdr);
+            if(kolon>-1) paragraf=linje.slice(kolon+1).trim();
+            erSeksjonsHdr=true;
+          }
+        });
+        if(!erSeksjonsHdr&&linje.trim()) paragraf+=' '+linje.trim();
+      });
+      if(paragraf.trim()){var pt=document.createElement('p');pt.style.cssText='margin:0;font-size:13px;color:#0B1F3A;line-height:1.85';pt.textContent=paragraf.trim();txtBody.appendChild(pt);}
+      txtKort.appendChild(txtBody);aiSeksjon.appendChild(txtKort);
+
+    } else {
+      // ── Strukturert JSON-modus ──────────────────────────────────────────
+      var topRad=div({style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px',marginBottom:'10px'}});
+      function lagKort2(ikon,tittel,farge,elementer,tomTekst){
+        var k=div({style:{background:'#fff',borderRadius:'14px',padding:'16px',boxShadow:'0 4px 16px rgba(0,0,0,.06)',borderTop:'4px solid '+farge,minHeight:'120px'}});
+        var h=div({style:{display:'flex',alignItems:'center',gap:'6px',marginBottom:'10px'}});
+        h.appendChild(div({style:{fontSize:'18px'}},ikon));
+        var ht=div({});
+        ht.appendChild(div({style:{fontSize:'11px',fontWeight:'bold',color:farge,letterSpacing:'1px',textTransform:'uppercase'}},tittel));
+        h.appendChild(ht);k.appendChild(h);
+        if(!elementer||!elementer.length){
+          var tom=div({style:{fontSize:'12px',color:'#C8D0DC',fontStyle:'italic',textAlign:'center',padding:'12px 0'}});tom.textContent=tomTekst;k.appendChild(tom);
+        } else {
+          elementer.forEach(function(e){
+            var tekst=typeof e==='string'?e:(e.forklaring||e.tema||'');
+            var antall=e.antall;
+            var row=div({style:{padding:'7px 0',borderBottom:'1px solid #F2F4F8'}});
+            var rI=div({style:{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:'8px'}});
+            var rT=div({style:{fontSize:'12px',color:'#0B1F3A',lineHeight:'1.6',flex:'1'}});rT.textContent=tekst;
+            rI.appendChild(rT);
+            if(antall){var ab=div({style:{padding:'1px 7px',borderRadius:'20px',background:farge+'14',border:'1px solid '+farge+'33',fontSize:'10px',color:farge,fontWeight:'bold',flexShrink:0,whiteSpace:'nowrap'}});ab.textContent=antall+'×';rI.appendChild(ab);}
+            row.appendChild(rI);k.appendChild(row);
+          });
+        }
+        return k;
+      }
+      topRad.appendChild(lagKort2('🔁','Gjentakende','#e74c3c',a.gjentakende,'Ingen gjentakende'));
+      topRad.appendChild(lagKort2('⚠️','Bekymringer','#f39c12',a.bekymringer.map(function(b){return{forklaring:b};})||[],'Ingen bekymringer'));
+      aiSeksjon.appendChild(topRad);
+      if((a.positiv||[]).length){
+        var pK=div({style:{background:'#fff',borderRadius:'14px',padding:'16px',boxShadow:'0 4px 16px rgba(39,174,96,.06)',borderTop:'4px solid #27ae60',marginBottom:'10px'}});
+        var pH=div({style:{display:'flex',alignItems:'center',gap:'7px',marginBottom:'10px'}});
+        pH.appendChild(div({style:{fontSize:'18px'}},'📈'));
+        var pHt=div({});pHt.appendChild(div({style:{fontSize:'11px',fontWeight:'bold',color:'#27ae60',letterSpacing:'1px',textTransform:'uppercase'}},'Positiv utvikling'));
+        pH.appendChild(pHt);pK.appendChild(pH);
+        (a.positiv||[]).forEach(function(pt2){var p3=document.createElement('p');p3.style.cssText='margin:0 0 8px 0;font-size:12px;color:#0B1F3A;line-height:1.7';p3.textContent=pt2;pK.appendChild(p3);});
+        aiSeksjon.appendChild(pK);
+      }
+      if(a.anbefaling){
+        var anK=div({style:{background:'linear-gradient(135deg,#0B2265,#1A4B8C)',borderRadius:'14px',padding:'18px 20px',boxShadow:'0 6px 24px rgba(11,34,101,.2)',marginBottom:'10px'}});
+        var anH=div({style:{display:'flex',alignItems:'center',gap:'8px',marginBottom:'10px'}});
+        anH.appendChild(div({style:{fontSize:'20px'}},'💡'));
+        var anHt=div({});anHt.appendChild(div({style:{fontSize:'11px',fontWeight:'bold',color:'#C9A84C',letterSpacing:'1px',textTransform:'uppercase'}},'Anbefaling til neste samtale'));
+        anH.appendChild(anHt);anK.appendChild(anH);
+        var anT=document.createElement('p');anT.style.cssText='margin:0;font-size:14px;color:#fff;line-height:1.9';anT.textContent=a.anbefaling;anK.appendChild(anT);
+        aiSeksjon.appendChild(anK);
+      }
+    }
+
+    var nyBtn=btn({style:{width:'100%',padding:'9px',borderRadius:'9px',border:'1px solid #C8D0DC',background:'#fff',color:'#7A8FA8',fontSize:'12px',cursor:'pointer',fontFamily:'inherit'}},'🔄 Analyser på nytt');
+    nyBtn.onclick=function(){setState({trenderAnalyse:null,trenderFeil:'',trenderLoading:false});};
+    aiSeksjon.appendChild(nyBtn);
+  } else if(S.trenderLoading){
+    var loadKort=div({style:{background:'#fff',borderRadius:'14px',padding:'32px 22px',boxShadow:'0 4px 20px rgba(91,44,140,.10)',borderLeft:'5px solid #8e44ad',textAlign:'center'}});
+    loadKort.appendChild(div({style:{fontSize:'28px',marginBottom:'10px'}},'🤖'));
+    loadKort.appendChild(div({style:{fontSize:'14px',color:'#8e44ad',fontWeight:'bold',marginBottom:'6px'}},'Analyserer samtalehistorikk...'));
+    loadKort.appendChild(div({style:{fontSize:'12px',color:'#7A8FA8'}},'Leser gjennom alle '+convs.length+' samtaler'));
+    aiSeksjon.appendChild(loadKort);
+  } else {
+    // Invitasjon til analyse
+    var invKort=div({style:{background:'#fff',borderRadius:'14px',padding:'22px',boxShadow:'0 4px 20px rgba(91,44,140,.08)',borderLeft:'5px solid #8e44ad',marginBottom:'10px'}});
+    invKort.appendChild(div({style:{fontSize:'15px',fontWeight:'bold',color:'#0B1F3A',marginBottom:'6px'}},'Hva forteller samtalene?'));
+    invKort.appendChild(div({style:{fontSize:'13px',color:'#7A8FA8',lineHeight:'1.8',marginBottom:'14px'}},'AI leser gjennom alle '+convs.length+' samtaler og gir deg konkrete innsikter om mønstre, fremgang, stagnasjoner og anbefaling til neste samtale.'));
+    if(S.trenderFeil)invKort.appendChild(div({className:'alert alert-red',style:{marginBottom:'10px'}},'⚠️ '+S.trenderFeil));
+    if(!S.apiKey){
+      invKort.appendChild(div({className:'alert alert-yellow'},'Legg inn Groq API-nøkkel i ⚙️ for å aktivere AI-analyse.'));
+    } else {
+      var aBtn=btn({style:{width:'100%',padding:'13px',borderRadius:'10px',border:'none',background:'#8e44ad',color:'#fff',fontSize:'14px',cursor:'pointer',fontWeight:'bold',fontFamily:'inherit',boxShadow:'0 4px 16px rgba(142,68,173,.3)'}},'🤖 Start AI-analyse');
+      aBtn.onclick=function(){kjorTrendAnalyse(p,convs);};
+      invKort.appendChild(aBtn);
+    }
+    aiSeksjon.appendChild(invKort);
+  }
+  wrap.appendChild(aiSeksjon);
+
+  // ── 2. GJENTAKENDE TEMAER ──────────────────────────────────────────────────
+  var alleMal=convs.flatMap(function(c){return c.mal||[];});
+  var temaMap={};
+  alleMal.forEach(function(m){
+    var nk=(m.tittel||'').toLowerCase().trim();if(!nk)return;
+    if(!temaMap[nk])temaMap[nk]={tittel:m.tittel,ant:0,kat:m.kategori,fase:m.spillfase};
+    temaMap[nk].ant++;
+  });
+  var gjentakende=Object.values(temaMap).filter(function(t){return t.ant>1;}).sort(function(a,b){return b.ant-a.ant;});
+  if(gjentakende.length){
+    wrap.appendChild(div({className:'section-lbl'},'🔁 Gjentakende temaer'));
+    var gjCard=div({className:'card',style:{marginBottom:'14px',borderLeft:'4px solid #e74c3c'}});
+    gjCard.appendChild(div({style:{fontSize:'12px',color:'#7A8FA8',marginBottom:'12px',lineHeight:'1.7'}},'Disse temaene dukker opp i flere samtaler – er det mangel på fremgang, eller bevisst prioritering?'));
+    gjentakende.forEach(function(t){
+      var kat=KATEGORIER.find(function(k){return k.id===t.kat;})||KATEGORIER[0];
+      var row=div({style:{display:'flex',alignItems:'center',gap:'10px',padding:'10px 0',borderBottom:'1px solid #C8D0DC'}});
+      row.appendChild(div({style:{fontSize:'18px'}},kat.ikon));
+      var info=div({style:{flex:'1'}});
+      info.appendChild(div({style:{fontSize:'14px',fontWeight:'bold',color:'#0B1F3A'}},t.tittel));
+      if(t.fase)info.appendChild(div({style:{fontSize:'11px',color:'#7A8FA8',marginTop:'2px'}},'📍 '+t.fase));
+      row.appendChild(info);
+      var b=div({style:{padding:'4px 12px',borderRadius:'20px',background:'rgba(231,76,60,.1)',border:'1px solid rgba(231,76,60,.3)',fontSize:'12px',color:'#c0392b',fontWeight:'bold',flexShrink:0}});
+      b.textContent=t.ant+'× samtaler';row.appendChild(b);gjCard.appendChild(row);
+    });
+    wrap.appendChild(gjCard);
+  }
+
+  // ── 3. NYTT I SISTE SAMTALE ───────────────────────────────────────────────
+  var sorterte=[...convs].sort(function(a,b){return dagTall(a.dato)-dagTall(b.dato);});
+  var sisteConv=sorterte[0];
+  if(sisteConv){
+    var tidligereTitler=new Set(convs.filter(function(c){return c.id!==sisteConv.id;}).flatMap(function(c){return c.mal||[];}).map(function(m){return(m.tittel||'').toLowerCase().trim();}));
+    var nyeTemaer=(sisteConv.mal||[]).filter(function(m){return !tidligereTitler.has((m.tittel||'').toLowerCase().trim())&&m.tittel&&m.tittel.trim();});
+    if(nyeTemaer.length){
+      wrap.appendChild(div({className:'section-lbl'},'✨ Nytt i siste samtale ('+sisteConv.dato+')'));
+      var nyCard=div({className:'card',style:{marginBottom:'14px',borderLeft:'4px solid #27ae60'}});
+      nyCard.appendChild(div({style:{fontSize:'12px',color:'#7A8FA8',marginBottom:'10px'}},'Disse temaene ble diskutert for første gang:'));
+      nyeTemaer.forEach(function(m){
+        var kat2=KATEGORIER.find(function(k){return k.id===m.kategori;})||KATEGORIER[0];
+        var row2=div({style:{display:'flex',alignItems:'center',gap:'10px',padding:'9px 0',borderBottom:'1px solid #C8D0DC'}});
+        row2.appendChild(div({style:{fontSize:'18px'}},kat2.ikon));
+        var txt=div({style:{flex:'1'}});
+        txt.appendChild(div({style:{fontSize:'14px',fontWeight:'bold',color:'#0B1F3A'}},m.tittel));
+        if(m.spillfase)txt.appendChild(div({style:{fontSize:'11px',color:'#7A8FA8',marginTop:'2px'}},'📍 '+m.spillfase));
+        if(m.kortbeskrivelse)txt.appendChild(div({style:{fontSize:'12px',color:'#7A8FA8',marginTop:'2px'}},m.kortbeskrivelse));
+        row2.appendChild(txt);
+        var ny=div({style:{padding:'3px 9px',borderRadius:'20px',background:'rgba(39,174,96,.1)',border:'1px solid rgba(39,174,96,.3)',fontSize:'11px',color:'#27ae60',fontWeight:'bold',flexShrink:0}});
+        ny.textContent='NY';row2.appendChild(ny);nyCard.appendChild(row2);
+      });
+      wrap.appendChild(nyCard);
+    }
+  }
+
+  // ── 4. SAMTALETIDSLINJE ───────────────────────────────────────────────────
+  wrap.appendChild(div({className:'section-lbl'},'Samtaletidslinje'));
+  var tlCard=div({className:'card',style:{marginBottom:'14px'}});
+  sorterte.forEach(function(c,i){
+    var t0=SAMTALETYPER.find(function(x){return x.id===(c.type||'Spillersamtale');})||SAMTALETYPER[0];
+    var row3=div({style:{display:'flex',alignItems:'flex-start',gap:'12px',paddingBottom:i<sorterte.length-1?'14px':'0',marginBottom:i<sorterte.length-1?'14px':'0',borderBottom:i<sorterte.length-1?'1px solid #C8D0DC':'none'}});
+    var dot=div({style:{width:10,height:10,borderRadius:'50%',background:t0.farge,flexShrink:0,marginTop:'4px'}});
+    var meta=div({style:{flex:'1'}});
+    var tRow=div({style:{display:'flex',alignItems:'center',gap:'7px',marginBottom:'5px',flexWrap:'wrap'}});
+    var tbadge=div({style:{padding:'3px 9px',borderRadius:'20px',background:t0.farge+'18',border:'1px solid '+t0.farge+'44',fontSize:'11px',color:t0.farge}});
+    tbadge.textContent=t0.ikon+' '+t0.id;tRow.appendChild(tbadge);
+    tRow.appendChild(el('span',{style:{fontSize:'11px',color:'#7A8FA8'}},'📅 '+c.dato));
+    if(c.mal&&c.mal.length)tRow.appendChild(el('span',{style:{fontSize:'11px',color:'#7A8FA8'}},c.mal.length+' mål'));
+    meta.appendChild(tRow);
+    if((c.mal||[]).length){
+      var malRad=div({style:{display:'flex',gap:'6px',flexWrap:'wrap',marginBottom:'4px'}});
+      (c.mal||[]).forEach(function(m){
+        var kat3=KATEGORIER.find(function(k){return k.id===m.kategori;})||KATEGORIER[0];
+        var mb2=div({style:{display:'inline-flex',alignItems:'center',gap:'4px',padding:'2px 8px',borderRadius:'20px',background:kat3.farge+'12',border:'1px solid '+kat3.farge+'33',fontSize:'11px',color:kat3.farge}});
+        mb2.textContent=kat3.ikon+' '+m.tittel;malRad.appendChild(mb2);
+      });
+      meta.appendChild(malRad);
+    }
+    if(c.notat){var n=div({style:{fontSize:'12px',color:'#7A8FA8',fontStyle:'italic',lineHeight:'1.6'}});n.textContent='"'+c.notat.slice(0,100)+(c.notat.length>100?'...':'')+'"';meta.appendChild(n);}
+    row3.appendChild(dot);row3.appendChild(meta);tlCard.appendChild(row3);
+  });
+  wrap.appendChild(tlCard);
+
+  // ── 5. KATEGORIFORDELING – kompakt og sekundær ────────────────────────────
+  var totMal=alleMal.length||1;
+  var katTeller={fotball:0,kultur:0,mentalitet:0,fysisk:0};
+  alleMal.forEach(function(m){var k=m.kategori||'fotball';katTeller[k]=(katTeller[k]||0)+1;});
+  var katHdr=div({style:{fontSize:'10px',color:'#7A8FA8',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'8px'}});
+  katHdr.textContent='Fordeling over alle samtaler';wrap.appendChild(katHdr);
+  var katRow=div({style:{display:'flex',gap:'8px',marginBottom:'20px',flexWrap:'wrap'}});
+  KATEGORIER.forEach(function(k){
+    var ant=katTeller[k.id]||0;var pst=Math.round((ant/totMal)*100);
+    var chip=div({style:{display:'inline-flex',alignItems:'center',gap:'5px',padding:'5px 12px',borderRadius:'20px',background:k.farge+'12',border:'1px solid '+k.farge+'33',fontSize:'12px',color:k.farge}});
+    chip.textContent=k.ikon+' '+k.lbl+': '+ant+(pst>0?' ('+pst+'%)':'');
+    katRow.appendChild(chip);
+  });
+  wrap.appendChild(katRow);
+
+  wrap.appendChild(div({className:'footer'},'STABÆK FOTBALL · G17 · KONFIDENSIELT'));
+  return page;
+}
+
+
+function rensAnalyse(raw){
+  var t=(raw||"").split("**").join("").split("*").join("");
+  var enIdx=t.indexOf(" 1. ");
+  if(enIdx>0&&t.slice(0,enIdx).toLowerCase().indexOf("samtalehistorikken")!==-1){
+    t=t.slice(enIdx+1);
+  }
+  [" 4. "," 3. "," 2. "].forEach(function(n){
+    t=t.split(n).join("\n"+n.trim()+" ");
+  });
+  t=t.split("\n").map(function(l){
+    l=l.trim();
+    if(l.length>3&&l[1]==="."&&l[2]===" "&&"1234".indexOf(l[0])!==-1) l=l.slice(3);
+    return l;
+  }).filter(function(l){return l.length>0;}).join("\n");
+  t=t.split("\n").map(function(l){
+    return l.indexOf("- ")===0?"• "+l.slice(2):l;
+  }).join("\n");
+  return t.replace(/  +/g," ").trim();
+}
+
+function parseAnalyse(raw){
+  var ji=raw.indexOf("{"),je=raw.lastIndexOf("}");
+  if(ji!==-1&&je>ji){
+    try{var obj=JSON.parse(raw.slice(ji,je+1));if(obj.gjentakende||obj.anbefaling)return obj;}catch(e){}
+  }
+  return {tekst: rensAnalyse(raw)};
+}
+
+function kjorTrendAnalyse(p,convs){
+  if(!S.apiKey){setState({trenderFeil:'Ingen API-nøkkel.'});return;}
+  setState({trenderLoading:true,trenderFeil:'',trenderAnalyse:null});
+  var historikk=byggSamtaleHistorikk(p,convs);
+  var prompt='Du er spillerutviklingsekspert for Stabæk G17. Analyser samtalehistorikken til '+p.navn+' ('+p.posisjon+'): '+historikk+' Gi en konkret analyse med disse delene: 1) GJENTAKENDE TEMAER: hva gar igjen i flere samtaler? 2) POSITIV UTVIKLING: hva endrer seg til det bedre? 3) BEKYMRINGER: hva henger igjen uten fremgang? 4) ANBEFALING NESTE SAMTALE: 1-2 konkrete forslag. Vaer kortfattet og handlingsorientert pa norsk.';
+  fetch('https://api.groq.com/openai/v1/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+S.apiKey},
+    body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:600,temperature:0.3,messages:[{role:'user',content:prompt}]})
+  }).then(function(r){return r.json();}).then(function(json){
+    if(json.error)throw new Error(json.error.message||String(json.error));
+    var tekst=(json.choices&&json.choices[0]&&json.choices[0].message&&json.choices[0].message.content)||'';
+    setState({trenderLoading:false,trenderAnalyse:tekst});
+  }).catch(function(err){setState({trenderLoading:false,trenderFeil:err.message});});
+}
+
+render();
+
+
+</script>
+</body>
+</html>
